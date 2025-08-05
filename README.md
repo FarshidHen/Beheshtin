@@ -1,36 +1,204 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Voice Content Platform
+
+A comprehensive web application for content creators to upload, transcribe, and manage voice content with role-based access control.
+
+## Features
+
+### User Management
+- **Sign Up**: Create accounts with different roles (Publisher, Editor, User)
+- **Sign In**: Secure authentication with JWT tokens
+- **Role-based Access**: Different permissions for different user types
+- **Profile Management**: Update personal information and settings
+
+### Content Management
+- **Voice File Upload**: Support for various audio formats
+- **Automatic Transcription**: Generate transcripts from audio files
+- **Content Metadata**: Titles, descriptions, keywords, and subjects
+- **Content Publishing**: Control visibility and publication status
+
+### Admin Features
+- **User Management**: View all users and manage their accounts
+- **Account Activation**: Activate or deactivate user accounts
+- **System Overview**: Dashboard with user statistics
+
+### Public Features
+- **Content Discovery**: Browse published content from publishers
+- **Like & Comment**: Social features for content interaction
+- **Public Frontend**: Accessible to all visitors
+
+## Technology Stack
+
+- **Frontend**: Next.js 14 with TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: SQLite with Prisma ORM
+- **Authentication**: JWT tokens with bcrypt password hashing
+- **UI Components**: Radix UI with custom styling
+- **Form Handling**: React Hook Form with Zod validation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd voice-content-platform
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Update the `.env` file with your configuration:
+```env
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-## Learn More
+4. Set up the database:
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-To learn more about Next.js, take a look at the following resources:
+5. Start the development server:
+```bash
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Authentication pages
+│   ├── (dashboard)/       # Dashboard pages
+│   ├── (public)/          # Public pages
+│   ├── api/               # API routes
+│   └── globals.css        # Global styles
+├── components/            # Reusable UI components
+│   └── ui/               # Base UI components
+├── lib/                  # Utility functions
+│   ├── auth.ts           # Authentication utilities
+│   ├── db.ts             # Database connection
+│   ├── utils.ts          # General utilities
+│   ├── validations.ts    # Form validation schemas
+│   └── middleware.ts     # API middleware
+└── prisma/               # Database schema and migrations
+    └── schema.prisma     # Prisma schema
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API Endpoints
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Authentication
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/signin` - User login
+
+### User Management (Admin)
+- `GET /api/users` - Get all users
+- `PATCH /api/users/[id]/toggle-status` - Toggle user activation
+
+### Content Management
+- `POST /api/content/upload` - Upload voice content
+- `GET /api/content` - Get user's content
+- `GET /api/content?public=true` - Get public content
+
+## User Roles
+
+### System Administrator
+- View all users
+- Activate/deactivate user accounts
+- Full system access
+
+### Publisher
+- Upload and manage voice content
+- Publish content for public viewing
+- Access to content analytics
+
+### Editor
+- Upload and edit content
+- Limited publishing capabilities
+- Content management tools
+
+### User
+- Basic content creation
+- Personal content management
+- View published content
+
+## Development
+
+### Database Migrations
+
+To create a new migration:
+```bash
+npx prisma migrate dev --name migration_name
+```
+
+To apply migrations:
+```bash
+npx prisma migrate deploy
+```
+
+### Adding New Features
+
+1. Update the Prisma schema if needed
+2. Create API routes in `src/app/api/`
+3. Build UI components in `src/components/`
+4. Add pages in the appropriate route group
+
+## Deployment
+
+### Environment Variables
+
+Make sure to set the following environment variables in production:
+
+- `DATABASE_URL`: Your production database URL
+- `NEXTAUTH_SECRET`: A secure random string
+- `NEXTAUTH_URL`: Your production domain
+
+### Database
+
+For production, consider using a more robust database like PostgreSQL:
+
+1. Update the Prisma schema:
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+2. Run migrations:
+```bash
+npx prisma migrate deploy
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For support and questions, please open an issue in the repository.
