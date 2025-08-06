@@ -72,9 +72,9 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-orange-50 via-yellow-50 to-brand-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-brand-orange-500 border-t-transparent mx-auto"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-orange-500 border-t-transparent mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600">Loading Beheshtin...</p>
         </div>
       </div>
@@ -82,21 +82,21 @@ export default function HomePage() {
   }
 
   return (
-          <div className="min-h-screen bg-gradient-to-br from-brand-orange-50 via-yellow-50 to-brand-green-50">
+          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
         {/* Version Indicator */}
-        <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-brand-orange-500 to-brand-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-          v2.2 - CSS FIXED
+        <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-orange-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+          v2.3 - STANDARD COLORS
         </div>
 
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-brand-orange-200 sticky top-0 z-50">
+      <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-orange-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4 sm:py-6">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-brand-orange-500 via-yellow-500 to-brand-green-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Mic className="h-6 w-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
                 Beheshtin
               </h1>
             </div>
