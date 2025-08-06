@@ -60,9 +60,10 @@ export default function SignInPage() {
 
       router.push('/dashboard')
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong'
       toast({
         title: 'Error',
-        description: error.message || 'Something went wrong',
+        description: errorMessage,
         variant: 'destructive'
       })
     } finally {

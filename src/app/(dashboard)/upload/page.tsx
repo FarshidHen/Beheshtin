@@ -133,9 +133,10 @@ export default function UploadPage() {
       }, 2000)
 
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong'
       toast({
         title: 'Upload failed',
-        description: error.message || 'Something went wrong',
+        description: errorMessage,
         variant: 'destructive'
       })
     } finally {
