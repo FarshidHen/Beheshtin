@@ -72,9 +72,9 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-orange-50 via-yellow-50 to-brand-green-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-orange-500 border-t-transparent mx-auto"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-brand-orange-500 border-t-transparent mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600">Loading Beheshtin...</p>
         </div>
       </div>
@@ -82,34 +82,34 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
-      {/* Version Indicator */}
-      <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-orange-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-        v2.0 - NEW DESIGN
-      </div>
+          <div className="min-h-screen bg-gradient-to-br from-brand-orange-50 via-yellow-50 to-brand-green-50">
+        {/* Version Indicator */}
+        <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-brand-orange-500 to-brand-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+          v2.1 - FIXED COLORS
+        </div>
 
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-orange-200 sticky top-0 z-50">
+      <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-brand-orange-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4 sm:py-6">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-r from-brand-orange-500 via-yellow-500 to-brand-green-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Mic className="h-6 w-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
                 Beheshtin
               </h1>
             </div>
             <div className="flex items-center space-x-3 sm:space-x-4">
               <Link href="/signin">
-                <Button variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 transition-all duration-200">
-                  <LogIn className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Sign In</span>
-                  <span className="sm:hidden">Login</span>
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                              <Button variant="outline" className="border-brand-orange-300 text-brand-orange-700 hover:bg-brand-orange-50 hover:border-brand-orange-400 transition-all duration-200">
+                <LogIn className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Sign In</span>
+                <span className="sm:hidden">Login</span>
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="bg-gradient-to-r from-brand-orange-500 to-brand-green-500 hover:from-brand-orange-600 hover:to-brand-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200">
                   <User className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Get Started</span>
                   <span className="sm:hidden">Join</span>
@@ -125,12 +125,12 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center relative z-10">
             <div className="mb-8">
-              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-100 to-green-100 rounded-full text-sm font-medium text-orange-800 mb-6">
+              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-brand-orange-100 to-brand-green-100 rounded-full text-sm font-medium text-brand-orange-800 mb-6">
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI-Powered Voice Platform
               </div>
               <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 leading-tight">
-                <span className="bg-gradient-to-r from-orange-600 via-yellow-600 to-green-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-brand-orange-600 via-yellow-600 to-brand-green-600 bg-clip-text text-transparent">
                   Transform Your Voice
                 </span>
                 <br />
@@ -143,13 +143,13 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 px-4">
               <Link href="/signup" className="w-full sm:w-auto">
-                <Button className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105">
+                <Button className="bg-gradient-to-r from-brand-orange-500 to-brand-green-500 hover:from-brand-orange-600 hover:to-brand-green-600 text-white text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105">
                   <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
                   Start Creating Today
                 </Button>
               </Link>
               <Link href="#features" className="w-full sm:w-auto">
-                <Button variant="outline" className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto transition-all duration-200">
+                <Button variant="outline" className="border-2 border-brand-orange-300 text-brand-orange-700 hover:bg-brand-orange-50 hover:border-brand-orange-400 text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto transition-all duration-200">
                   <Play className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
                   See How It Works
                 </Button>
@@ -160,7 +160,7 @@ export default function HomePage() {
         
         {/* Background decoration */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-brand-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
           <div className="absolute top-40 right-10 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-2000"></div>
           <div className="absolute bottom-20 left-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse animation-delay-4000"></div>
         </div>
@@ -171,27 +171,27 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div className="space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
-                1000+
-              </div>
-              <p className="text-gray-600 font-medium">Voice Content</p>
+                          <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
+              1000+
             </div>
-            <div className="space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
-                500+
-              </div>
-              <p className="text-gray-600 font-medium">Active Creators</p>
+            <p className="text-gray-600 font-medium">Voice Content</p>
+          </div>
+          <div className="space-y-2">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
+              500+
             </div>
-            <div className="space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
-                99.9%
-              </div>
-              <p className="text-gray-600 font-medium">AI Accuracy</p>
+            <p className="text-gray-600 font-medium">Active Creators</p>
+          </div>
+          <div className="space-y-2">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
+              99.9%
             </div>
-            <div className="space-y-2">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
-                24/7
-              </div>
+            <p className="text-gray-600 font-medium">AI Accuracy</p>
+          </div>
+          <div className="space-y-2">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
+              24/7
+            </div>
               <p className="text-gray-600 font-medium">Platform Uptime</p>
             </div>
           </div>
