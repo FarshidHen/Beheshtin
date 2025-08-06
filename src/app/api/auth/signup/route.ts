@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { signUpSchema } from '@/lib/validations'
 import { createUser, getUserByEmail } from '@/lib/auth'
-import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
     const user = await createUser(validatedData)
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = user
+    const { password: _, ...userWithoutPassword } = user
 
     return NextResponse.json(
       { 
