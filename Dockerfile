@@ -18,7 +18,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Install missing CSS build dependencies
-RUN npm install --prefer-offline --no-audit --progress=false postcss autoprefixer
+RUN npm install --prefer-offline --no-audit --progress=false postcss autoprefixer @tailwindcss/postcss
 
 # Generate Prisma client
 RUN npx prisma generate
