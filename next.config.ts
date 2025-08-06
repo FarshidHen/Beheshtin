@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   experimental: {
-    serverExternalPackages: ['@prisma/client']
+    serverComponentsExternalPackages: ['@prisma/client']
   },
   images: {
     domains: ['localhost'],
