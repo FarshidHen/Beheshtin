@@ -17,6 +17,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Install missing CSS build dependencies
+RUN npm install --prefer-offline --no-audit --progress=false postcss autoprefixer
+
 # Generate Prisma client
 RUN npx prisma generate
 
