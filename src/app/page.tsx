@@ -85,7 +85,7 @@ export default function HomePage() {
           <div className="min-h-screen bg-gradient-to-br from-brand-orange-50 via-yellow-50 to-brand-green-50">
         {/* Version Indicator */}
         <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-brand-orange-500 to-brand-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-          v2.1 - FIXED COLORS
+          v2.2 - CSS FIXED
         </div>
 
       {/* Header */}

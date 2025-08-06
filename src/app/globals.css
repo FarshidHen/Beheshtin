@@ -59,6 +59,48 @@
   }
 }
 
+/* Force Tailwind to generate brand color classes */
+@layer utilities {
+  .bg-brand-orange-50 { background-color: #fff7ed; }
+  .bg-brand-orange-100 { background-color: #ffedd5; }
+  .bg-brand-orange-200 { background-color: #fed7aa; }
+  .bg-brand-orange-300 { background-color: #fdba74; }
+  .bg-brand-orange-400 { background-color: #fb923c; }
+  .bg-brand-orange-500 { background-color: #f97316; }
+  .bg-brand-orange-600 { background-color: #ea580c; }
+  .bg-brand-orange-700 { background-color: #c2410c; }
+  .bg-brand-orange-800 { background-color: #9a3412; }
+  .bg-brand-orange-900 { background-color: #7c2d12; }
+  
+  .bg-brand-green-50 { background-color: #f0fdf4; }
+  .bg-brand-green-100 { background-color: #dcfce7; }
+  .bg-brand-green-200 { background-color: #bbf7d0; }
+  .bg-brand-green-300 { background-color: #86efac; }
+  .bg-brand-green-400 { background-color: #4ade80; }
+  .bg-brand-green-500 { background-color: #22c55e; }
+  .bg-brand-green-600 { background-color: #16a34a; }
+  .bg-brand-green-700 { background-color: #15803d; }
+  .bg-brand-green-800 { background-color: #166534; }
+  .bg-brand-green-900 { background-color: #14532d; }
+  
+  .text-brand-orange-500 { color: #f97316; }
+  .text-brand-orange-600 { color: #ea580c; }
+  .text-brand-orange-700 { color: #c2410c; }
+  .text-brand-orange-800 { color: #9a3412; }
+  
+  .text-brand-green-500 { color: #22c55e; }
+  .text-brand-green-600 { color: #16a34a; }
+  .text-brand-green-700 { color: #15803d; }
+  
+  .border-brand-orange-200 { border-color: #fed7aa; }
+  .border-brand-orange-300 { border-color: #fdba74; }
+  .border-brand-orange-400 { border-color: #fb923c; }
+  
+  .border-brand-green-200 { border-color: #bbf7d0; }
+  .border-brand-green-300 { border-color: #86efac; }
+  .border-brand-green-400 { border-color: #4ade80; }
+}
+
 @layer components {
   .gradient-bg {
     background: linear-gradient(135deg, #f97316 0%, #22c55e 100%);
@@ -73,13 +115,5 @@
   
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
-  }
-  
-  .btn-primary {
-    @apply bg-gradient-to-r from-brand-orange-500 to-brand-orange-600 hover:from-brand-orange-600 hover:to-brand-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
-  }
-  
-  .btn-secondary {
-    @apply bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
   }
 }
