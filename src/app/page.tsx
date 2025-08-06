@@ -83,6 +83,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
+      {/* Version Indicator */}
+      <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-orange-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+        v2.0 - NEW DESIGN
+      </div>
+
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-orange-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
