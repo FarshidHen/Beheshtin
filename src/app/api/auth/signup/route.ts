@@ -29,15 +29,15 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     )
-      } catch (error: unknown) {
-    console.error('Signup error:', error)
-    
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
+          } catch (error: unknown) {
+      console.error('Signup error:', error)
+      
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+        return NextResponse.json(
+          { error: 'Validation error', details: (error as any).errors },
+          { status: 400 }
+        )
+      }
 
     return NextResponse.json(
       { error: 'Internal server error' },
