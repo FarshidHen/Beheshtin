@@ -132,7 +132,7 @@ export default function UploadPage() {
         router.push('/dashboard')
       }, 2000)
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Upload failed',
         description: error.message || 'Something went wrong',
@@ -160,7 +160,7 @@ export default function UploadPage() {
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Upload Voice Content</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Upload your audio file and we'll generate a transcript, description, and keywords for you using our advanced AI technology.
+                              Upload your audio file and we&apos;ll generate a transcript, description, and keywords for you using our advanced AI technology.
             </p>
           </div>
         </div>

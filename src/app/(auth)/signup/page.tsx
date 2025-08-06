@@ -58,7 +58,7 @@ export default function SignUpPage() {
       })
 
       router.push('/signin')
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Something went wrong',
@@ -183,7 +183,7 @@ export default function SignUpPage() {
 
         {/* Features preview */}
         <div className="text-center">
-          <p className="text-sm text-gray-500 mb-4">What you'll get:</p>
+          <p className="text-sm text-gray-500 mb-4">What you&apos;ll get:</p>
           <div className="grid grid-cols-3 gap-4 text-xs">
             <div className="bg-white/50 rounded-lg p-3 border border-brand-orange-200">
               <div className="w-6 h-6 bg-brand-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">

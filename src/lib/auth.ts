@@ -10,11 +10,11 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword)
 }
 
-export function generateToken(payload: any): string {
+export function generateToken(payload: Record<string, unknown>): string {
   return jwt.sign(payload, process.env.NEXTAUTH_SECRET!, { expiresIn: '7d' })
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): unknown {
   try {
     return jwt.verify(token, process.env.NEXTAUTH_SECRET!)
   } catch (error) {

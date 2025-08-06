@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword,
       token
     })
-  } catch (error: any) {
+      } catch (error: unknown) {
     console.error('Signin error:', error)
     
     if (error.name === 'ZodError') {
