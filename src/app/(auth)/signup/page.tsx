@@ -32,7 +32,10 @@ export default function SignUpPage() {
     setValue,
     formState: { errors }
   } = useForm<SignUpData>({
-    resolver: zodResolver(signUpSchema)
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      role: 'USER'
+    }
   })
 
   const onSubmit = async (data: SignUpData) => {
