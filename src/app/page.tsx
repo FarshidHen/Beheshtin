@@ -82,10 +82,25 @@ export default function HomePage() {
   }
 
   return (
-          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
+          <div style={{ 
+            minHeight: '100vh', 
+            background: 'linear-gradient(135deg, #fff7ed 0%, #fffbeb 50%, #f0fdf4 100%)' 
+          }}>
         {/* Version Indicator */}
-        <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-orange-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-          v3.1 - FIXED IMPORT
+        <div style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 50,
+          background: 'linear-gradient(90deg, #f97316, #22c55e)',
+          color: 'white',
+          padding: '0.25rem 0.75rem',
+          borderRadius: '9999px',
+          fontSize: '0.875rem',
+          fontWeight: 'bold',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+        }}>
+          v3.2 - INLINE STYLES
         </div>
 
       {/* Header */}
