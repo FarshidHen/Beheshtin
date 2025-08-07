@@ -4,7 +4,7 @@ export const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['PUBLISHER', 'EDITOR', 'USER'])
+  role: z.enum(['ADMIN', 'PUBLISHER', 'EDITOR', 'USER'])
 })
 
 export const signInSchema = z.object({
@@ -14,7 +14,7 @@ export const signInSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  role: z.enum(['PUBLISHER', 'EDITOR', 'USER']),
+  role: z.enum(['ADMIN', 'PUBLISHER', 'EDITOR', 'USER']),
   avatar: z.string().optional(),
   bio: z.string().optional(),
   website: z.string().url().optional().or(z.literal(''))

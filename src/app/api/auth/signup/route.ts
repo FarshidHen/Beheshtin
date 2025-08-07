@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     logInfo('Signup attempt started', 'SIGNUP')
     
     const body = await request.json()
+    logInfo(`Raw signup data: ${JSON.stringify(body)}`, 'SIGNUP')
     const validatedData = signUpSchema.parse(body)
 
     logInfo(`Signup attempt for email: ${validatedData.email}`, 'SIGNUP')
