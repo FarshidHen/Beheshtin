@@ -3,9 +3,11 @@ import { authMiddleware } from '@/lib/middleware'
 import { prisma } from '@/lib/db'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { logError, logInfo } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
+    logInfo('Upload attempt started', 'UPLOAD')
     const user = authMiddleware(request)
     
     if (user instanceof NextResponse) {
@@ -79,12 +81,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    logInfo(`Content uploaded successfully: ${content.title}`, 'UPLOAD')
+    
     return NextResponse.json({
       message: 'Content uploaded successfully',
       content
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    logError(error, 'UPLOAD')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
