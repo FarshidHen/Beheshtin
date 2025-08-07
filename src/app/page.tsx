@@ -85,7 +85,7 @@ export default function HomePage() {
           <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
         {/* Version Indicator */}
         <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-orange-500 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-          v3.0 - POSTCSS OK
+          v3.1 - FIXED IMPORT
         </div>
 
       {/* Header */}
