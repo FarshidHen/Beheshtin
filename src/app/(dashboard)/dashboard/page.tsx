@@ -81,6 +81,25 @@ export default function DashboardPage() {
     router.push('/signin')
   }
 
+  const handleListen = (audioUrl: string, title: string) => {
+    try {
+      // Create audio element and play
+      const audio = new Audio(audioUrl)
+      audio.play()
+      
+      toast({
+        title: 'Playing Audio',
+        description: `Now playing: ${title}`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to play audio file',
+        variant: 'destructive'
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-orange-50 to-brand-green-50">
@@ -294,7 +313,12 @@ export default function DashboardPage() {
                         </div>
                         
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50"
+                            onClick={() => handleListen(content.audioUrl, content.title)}
+                          >
                             <Play className="h-4 w-4 mr-1" />
                             Listen
                           </Button>
