@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Heart, MessageCircle, TrendingUp, Calendar } from 'lucide-react'
+import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2 } from 'lucide-react'
 
 interface User {
   id: string
@@ -34,6 +37,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [contents, setContents] = useState<Content[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const [editingContent, setEditingContent] = useState<Content | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -81,11 +87,37 @@ export default function DashboardPage() {
     router.push('/signin')
   }
 
-  const handleListen = (audioUrl: string, title: string) => {
+  const handlePlay = (contentId: string, audioUrl: string, title: string) => {
     try {
-      // Create audio element and play
+      // Stop current audio if playing
+      if (currentAudio) {
+        currentAudio.pause()
+        currentAudio.currentTime = 0
+      }
+
+      // Create new audio element
       const audio = new Audio(audioUrl)
+      
+      // Set up event listeners
+      audio.addEventListener('ended', () => {
+        setPlayingId(null)
+        setCurrentAudio(null)
+      })
+      
+      audio.addEventListener('error', () => {
+        toast({
+          title: 'Error',
+          description: 'Failed to load audio file',
+          variant: 'destructive'
+        })
+        setPlayingId(null)
+        setCurrentAudio(null)
+      })
+
+      // Play the audio
       audio.play()
+      setCurrentAudio(audio)
+      setPlayingId(contentId)
       
       toast({
         title: 'Playing Audio',
@@ -95,6 +127,110 @@ export default function DashboardPage() {
       toast({
         title: 'Error',
         description: 'Failed to play audio file',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handlePause = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      setPlayingId(null)
+    }
+  }
+
+  const handleStop = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      setCurrentAudio(null)
+      setPlayingId(null)
+    }
+  }
+
+  const handleDelete = async (contentId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/content/${contentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete content')
+      }
+
+      // Remove from local state
+      setContents(contents.filter(c => c.id !== contentId))
+      
+      // Stop audio if this content was playing
+      if (playingId === contentId) {
+        handleStop()
+      }
+
+      toast({
+        title: 'Success',
+        description: `"${title}" has been deleted successfully`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete content',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!editingContent) return
+
+    const formData = new FormData(e.currentTarget)
+    const updatedData = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      keywords: formData.get('keywords') as string,
+      subject: formData.get('subject') as string,
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/content/${editingContent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update content')
+      }
+
+      const updatedContent = await response.json()
+      
+      // Update local state
+      setContents(contents.map(c => 
+        c.id === editingContent.id ? { ...c, ...updatedData } : c
+      ))
+      
+      setEditingContent(null)
+
+      toast({
+        title: 'Success',
+        description: 'Content updated successfully',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update content',
         variant: 'destructive'
       })
     }
@@ -312,20 +448,64 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50"
-                            onClick={() => handleListen(content.audioUrl, content.title)}
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            Listen
-                          </Button>
-                          <Button variant="outline" size="sm" className="flex-1 border-brand-green-200 text-brand-green-700 hover:bg-brand-green-50">
-                            <Settings className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
+                        <div className="space-y-2">
+                          {/* Audio Controls */}
+                          <div className="flex space-x-2">
+                            {playingId === content.id ? (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50"
+                                  onClick={handlePause}
+                                >
+                                  <Pause className="h-4 w-4 mr-1" />
+                                  Pause
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                                  onClick={handleStop}
+                                >
+                                  <Square className="h-4 w-4 mr-1" />
+                                  Stop
+                                </Button>
+                              </>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50"
+                                onClick={() => handlePlay(content.id, content.audioUrl, content.title)}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                Play
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* Edit/Delete Controls */}
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 border-brand-green-200 text-brand-green-700 hover:bg-brand-green-50"
+                              onClick={() => setEditingContent(content)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                              onClick={() => handleDelete(content.id, content.title)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -336,6 +516,85 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Edit Modal */}
+      {editingContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Edit Content</CardTitle>
+              <CardDescription>Update your audio content details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    defaultValue={editingContent.title}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    defaultValue={editingContent.description || ''}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="keywords">Keywords</Label>
+                    <Input
+                      id="keywords"
+                      name="keywords"
+                      defaultValue={editingContent.keywords || ''}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      name="subject"
+                      defaultValue={editingContent.subject || ''}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex space-x-2 pt-4">
+                  <Button type="submit" className="flex-1">
+                    Save Changes
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setEditingContent(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={() => {
+                      setEditingContent(null)
+                      handleDelete(editingContent.id, editingContent.title)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
