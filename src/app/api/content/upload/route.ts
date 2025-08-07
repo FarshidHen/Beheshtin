@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
 
     // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), 'public', 'uploads')
-    await mkdir(uploadsDir, { recursive: true })
+    try {
+      await mkdir(uploadsDir, { recursive: true, mode: 0o777 })
+    } catch (error) {
+      // Directory might already exist, that's okay
+      logInfo(`Upload directory status: ${error}`, 'UPLOAD')
+    }
 
     // Generate unique filename
     const timestamp = Date.now()
