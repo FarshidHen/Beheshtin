@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         keywords: keywords || '',
         subject: subject || '',
         transcript: mockTranscript,
-        audioUrl: `/uploads/${filename}`,
+        audioUrl: `/api/uploads/${filename}`,
         audioDuration: 0, // You would calculate this from the actual audio file
         userId: user.userId,
         isPublished: false,
