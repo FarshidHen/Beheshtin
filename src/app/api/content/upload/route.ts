@@ -66,20 +66,11 @@ export async function POST(request: NextRequest) {
         transcript: null, // Will be generated when processed
         audioUrl: `/api/uploads/${filename}`,
         audioDuration: 0, // You would calculate this from the actual audio file
-        language: language as 'ENGLISH' | 'FARSI' || 'ENGLISH',
+        language: (language as 'ENGLISH' | 'FARSI') || 'ENGLISH',
         isProcessed: false,
         userId: user.userId,
         isPublished: false,
         isPublic: true
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
       }
     })
 
