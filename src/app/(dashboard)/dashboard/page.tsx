@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2 } from 'lucide-react'
+import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle } from 'lucide-react'
 
 interface User {
   id: string
@@ -23,8 +23,10 @@ interface Content {
   id: string
   title: string
   description?: string
-  transcript: string
+  transcript: string | null
   audioUrl: string
+  language: 'ENGLISH' | 'FARSI'
+  isProcessed: boolean
   isPublished: boolean
   createdAt: string
   _count: {
@@ -40,6 +42,7 @@ export default function DashboardPage() {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
   const router = useRouter()
   const { toast } = useToast()
 
@@ -183,6 +186,50 @@ export default function DashboardPage() {
         title: 'Error',
         description: 'Failed to delete content',
         variant: 'destructive'
+      })
+    }
+  }
+
+  const handleProcess = async (contentId: string, title: string) => {
+    setProcessingIds(prev => new Set([...prev, contentId]))
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/content/${contentId}/process`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to process content')
+      }
+
+      const result = await response.json()
+      
+      // Update local state
+      setContents(contents.map(c => 
+        c.id === contentId 
+          ? { ...c, transcript: result.content.transcript, isProcessed: true }
+          : c
+      ))
+
+      toast({
+        title: 'Success!',
+        description: `Transcript generated for "${title}"`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to generate transcript',
+        variant: 'destructive'
+      })
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(contentId)
+        return newSet
       })
     }
   }
@@ -417,6 +464,18 @@ export default function DashboardPage() {
                           <CardDescription className="line-clamp-2 mt-2">
                             {content.description || 'No description'}
                           </CardDescription>
+                          <div className="flex items-center mt-2 space-x-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                              <Languages className="h-3 w-3 mr-1" />
+                              {content.language === 'FARSI' ? 'Farsi' : 'English'}
+                            </span>
+                            {content.isProcessed && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-600">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Processed
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="ml-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -449,6 +508,39 @@ export default function DashboardPage() {
                         </div>
                         
                         <div className="space-y-2">
+                          {/* Process Button */}
+                          {!content.isProcessed && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+                              onClick={() => handleProcess(content.id, content.title)}
+                              disabled={processingIds.has(content.id)}
+                            >
+                              {processingIds.has(content.id) ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-700 mr-2"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="h-4 w-4 mr-1" />
+                                  Generate Transcript
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          
+                          {/* Transcript Preview */}
+                          {content.isProcessed && content.transcript && (
+                            <div className="bg-gray-50 rounded-md p-3">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2">Transcript:</h4>
+                              <p className="text-xs text-gray-600 line-clamp-3">
+                                {content.transcript}
+                              </p>
+                            </div>
+                          )}
+                          
                           {/* Audio Controls */}
                           <div className="flex space-x-2">
                             {playingId === content.id ? (

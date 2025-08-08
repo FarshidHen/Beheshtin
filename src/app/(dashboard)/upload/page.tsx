@@ -7,13 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
-import { Upload, ArrowLeft, FileAudio, Mic, Sparkles, X } from 'lucide-react'
+import { Upload, ArrowLeft, FileAudio, Mic, Sparkles, X, Languages } from 'lucide-react'
 
 export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('ENGLISH')
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -99,6 +101,7 @@ export default function UploadPage() {
       formData.append('description', description)
       formData.append('keywords', keywords)
       formData.append('subject', subject)
+      formData.append('language', selectedLanguage)
 
       const response = await fetch('/api/content/upload', {
         method: 'POST',
@@ -271,7 +274,7 @@ export default function UploadPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="keywords" className="text-sm font-medium text-gray-700">Keywords (Optional)</Label>
                     <Input
@@ -290,6 +293,29 @@ export default function UploadPage() {
                       placeholder="Enter the subject or topic"
                       className="mt-1 border-brand-orange-200 focus:border-brand-orange-500 focus:ring-brand-orange-500"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="language" className="text-sm font-medium text-gray-700">Audio Language</Label>
+                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                      <SelectTrigger className="mt-1 border-brand-orange-200 focus:border-brand-orange-500 focus:ring-brand-orange-500">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ENGLISH">
+                          <div className="flex items-center">
+                            <Languages className="h-4 w-4 mr-2" />
+                            English
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="FARSI">
+                          <div className="flex items-center">
+                            <Languages className="h-4 w-4 mr-2" />
+                            Farsi (Persian)
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

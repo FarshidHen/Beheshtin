@@ -56,10 +56,12 @@ model Content {
   description String?
   keywords    String? // Comma-separated keywords
   subject     String?
-  transcript  String
+  transcript  String?
   editedTranscript String?
   audioUrl    String
   audioDuration Int? // Duration in seconds
+  language    ContentLanguage @default(ENGLISH)
+  isProcessed Boolean @default(false)
   isPublished Boolean @default(false)
   isPublic    Boolean @default(true)
   createdAt   DateTime @default(now())
@@ -108,4 +110,9 @@ enum UserRole {
   PUBLISHER
   EDITOR
   USER
+}
+
+enum ContentLanguage {
+  ENGLISH
+  FARSI
 }
