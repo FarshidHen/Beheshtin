@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { signInSchema } from '@/lib/validations'
 import { getUserByEmail, verifyPassword, generateToken } from '@/lib/auth'
+import { logError, logInfo } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
+    logInfo('Signin attempt started', 'SIGNIN')
     const body = await request.json()
+    logInfo(`Signin attempt for email: ${body.email}`, 'SIGNIN')
     const validatedData = signInSchema.parse(body)
 
     // Find user by email
@@ -43,20 +46,22 @@ export async function POST(request: NextRequest) {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user
 
+    logInfo(`Signin successful for user: ${user.email}`, 'SIGNIN')
+    
     return NextResponse.json({
       message: 'Login successful',
       user: userWithoutPassword,
       token
     })
-          } catch (error: unknown) {
-      console.error('Signin error:', error)
-      
-      if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
-        return NextResponse.json(
-          { error: 'Validation error', details: (error as any).errors },
-          { status: 400 }
-        )
-      }
+  } catch (error: unknown) {
+    logError(error, 'SIGNIN')
+    
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+      return NextResponse.json(
+        { error: 'Validation error', details: (error as any).errors },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json(
       { error: 'Internal server error' },
