@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: beheshtin-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@db:5432/voice_content_platform
+    depends_on:
+      - db
+    networks:
+      - beheshtin-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: beheshtin-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: voice_content_platform
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - beheshtin-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: beheshtin-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/ssl/certs
+      - certbot_data:/var/www/certbot
+    depends_on:
+      - app
+    networks:
+      - beheshtin-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: beheshtin-certbot
+    volumes:
+      - certbot_data:/var/www/certbot
+      - ./ssl:/etc/letsencrypt
+    command: certonly --webroot --webroot-path=/var/www/certbot --email admin@beheshtin.com --agree-tos --no-eff-email -d beheshtin.com -d www.beheshtin.com
+
+volumes:
+  postgres_data:
+  certbot_data:
+
+networks:
+  beheshtin-network:
+    driver: bridge
