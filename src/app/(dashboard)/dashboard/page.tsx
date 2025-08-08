@@ -531,6 +531,31 @@ export default function DashboardPage() {
                             </Button>
                           )}
                           
+                          {/* Features Info Cards */}
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="bg-brand-orange-50 rounded-md p-2 text-center border border-brand-orange-200">
+                              <div className="w-5 h-5 bg-brand-orange-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                                <Mic className="h-3 w-3 text-white" />
+                              </div>
+                              <p className="text-xs font-medium text-gray-700">AI Transcription</p>
+                              <p className="text-xs text-gray-500">Automatic text</p>
+                            </div>
+                            <div className="bg-brand-green-50 rounded-md p-2 text-center border border-brand-green-200">
+                              <div className="w-5 h-5 bg-brand-green-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                                <Sparkles className="h-3 w-3 text-white" />
+                              </div>
+                              <p className="text-xs font-medium text-gray-700">Smart Analysis</p>
+                              <p className="text-xs text-gray-500">Keywords & desc</p>
+                            </div>
+                            <div className="bg-gradient-to-r from-brand-orange-50 to-brand-green-50 rounded-md p-2 text-center border border-brand-orange-200">
+                              <div className="w-5 h-5 bg-gradient-to-r from-brand-orange-500 to-brand-green-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                                <Upload className="h-3 w-3 text-white" />
+                              </div>
+                              <p className="text-xs font-medium text-gray-700">Easy Publishing</p>
+                              <p className="text-xs text-gray-500">Share content</p>
+                            </div>
+                          </div>
+
                           {/* Transcript Preview */}
                           {content.isProcessed && content.transcript && (
                             <div className="bg-gray-50 rounded-md p-3">

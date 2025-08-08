@@ -360,30 +360,7 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        {/* Features preview */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white/50 rounded-lg p-4 border border-brand-orange-200 text-center">
-            <div className="w-8 h-8 bg-brand-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Mic className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-700">AI Transcription</p>
-            <p className="text-xs text-gray-500">Automatic text generation</p>
-          </div>
-          <div className="bg-white/50 rounded-lg p-4 border border-brand-green-200 text-center">
-            <div className="w-8 h-8 bg-brand-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-700">Smart Analysis</p>
-            <p className="text-xs text-gray-500">Keywords & descriptions</p>
-          </div>
-          <div className="bg-white/50 rounded-lg p-4 border border-brand-orange-200 text-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-brand-orange-500 to-brand-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Upload className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-700">Easy Publishing</p>
-            <p className="text-xs text-gray-500">Share with community</p>
-          </div>
-        </div>
+
       </div>
     </div>
   )
