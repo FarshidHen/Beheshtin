@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './auth'
 
 export function authMiddleware(request: NextRequest) {
+  console.log('🚨🚨🚨 MIDDLEWARE CALLED! 🚨🚨🚨')
+  console.log('🚨 URL:', request.url)
+  console.log('🚨 Method:', request.method)
+  
   const authHeader = request.headers.get('authorization')
   console.log('🔍 Auth header:', authHeader ? 'Present' : 'Missing')
   
