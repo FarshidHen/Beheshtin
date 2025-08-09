@@ -70,7 +70,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, description, keywords, subject } = body
+    const { title, description, keywords, subject, language, transcript } = body
 
     // Update content
     const content = await prisma.content.update({
@@ -83,6 +83,8 @@ export async function PUT(
         description,
         keywords,
         subject,
+        language,
+        transcript,
       },
       include: {
         user: {

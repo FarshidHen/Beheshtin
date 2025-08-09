@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles } from 'lucide-react'
+import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles, ArrowUpRight } from 'lucide-react'
 
 interface User {
   id: string
@@ -29,6 +29,8 @@ interface Content {
   isProcessed: boolean
   isPublished: boolean
   createdAt: string
+  keywords?: string
+  subject?: string
   _count: {
     likes: number
     comments: number
@@ -42,6 +44,7 @@ export default function DashboardPage() {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
+  const [detailedContent, setDetailedContent] = useState<Content | null>(null)
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
   const router = useRouter()
   const { toast } = useToast()
@@ -81,6 +84,88 @@ export default function DashboardPage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleOpenDetailedView = (content: Content) => {
+    setDetailedContent(content)
+    // Stop any currently playing audio
+    if (currentAudio) {
+      currentAudio.pause()
+      setCurrentAudio(null)
+      setPlayingId(null)
+    }
+  }
+
+  const handleSaveDetailedChanges = async () => {
+    if (!detailedContent) return
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast({
+          title: 'Error',
+          description: 'Authentication required',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      // Get form values
+      const title = (document.getElementById('detail-title') as HTMLInputElement)?.value
+      const description = (document.getElementById('detail-description') as HTMLTextAreaElement)?.value
+      const keywords = (document.getElementById('detail-keywords') as HTMLInputElement)?.value
+      const subject = (document.getElementById('detail-subject') as HTMLInputElement)?.value
+      const language = (document.getElementById('detail-language') as HTMLSelectElement)?.value
+      const transcript = (document.getElementById('detail-transcript') as HTMLTextAreaElement)?.value
+
+      const response = await fetch(`/api/content/${detailedContent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          keywords,
+          subject,
+          language,
+          transcript: transcript || detailedContent.transcript
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update content')
+      }
+
+      // Update local state
+      setContents(prev => prev.map(c => 
+        c.id === detailedContent.id 
+          ? { 
+              ...c, 
+              title, 
+              description, 
+              keywords, 
+              subject, 
+              language: language as 'ENGLISH' | 'FARSI',
+              transcript: transcript || c.transcript
+            }
+          : c
+      ))
+
+      toast({
+        title: 'Success',
+        description: 'Content updated successfully',
+      })
+
+      setDetailedContent(null)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update content',
+        variant: 'destructive'
+      })
     }
   }
 
@@ -460,7 +545,18 @@ export default function DashboardPage() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg text-gray-900 line-clamp-2">{content.title}</CardTitle>
+                          <CardTitle 
+                            className="text-lg text-gray-900 line-clamp-2 cursor-pointer hover:text-brand-orange-600 transition-colors group"
+                            onClick={() => handleOpenDetailedView(content)}
+                          >
+                            <span className="flex items-center">
+                              {content.title}
+                              <ArrowUpRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-brand-orange-500" />
+                            </span>
+                          </CardTitle>
+                          <p className="text-xs text-brand-orange-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to view details & edit
+                          </p>
                           <CardDescription className="line-clamp-2 mt-2">
                             {content.description || 'No description'}
                           </CardDescription>
@@ -708,6 +804,197 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Detailed Content View Modal */}
+      {detailedContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl text-gray-900">{detailedContent.title}</CardTitle>
+                  <CardDescription className="text-gray-600 mt-2">
+                    Detailed view and editing for your audio content
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDetailedContent(null)}
+                  className="h-8 w-8 p-0"
+                >
+                  <span className="sr-only">Close</span>
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-6 space-y-6">
+              {/* Audio Player Section */}
+              <div className="bg-gradient-to-r from-brand-orange-50 to-brand-green-50 rounded-lg p-6 border border-brand-orange-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Mic className="h-5 w-5 mr-2 text-brand-orange-500" />
+                  Audio Player
+                </h3>
+                
+                <div className="space-y-4">
+                  <audio
+                    ref={(audio) => {
+                      if (audio) {
+                        audio.src = detailedContent.audioUrl
+                        audio.controls = true
+                        audio.className = "w-full"
+                      }
+                    }}
+                    controls
+                    className="w-full"
+                  />
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>Language: {detailedContent.language === 'FARSI' ? 'Farsi' : 'English'}</span>
+                    <span>Status: {detailedContent.isPublished ? 'Published' : 'Draft'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Details Form */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Edit className="h-5 w-5 mr-2 text-brand-green-500" />
+                    Content Details
+                  </h3>
+                  
+                  <div>
+                    <Label htmlFor="detail-title">Title</Label>
+                    <Input
+                      id="detail-title"
+                      defaultValue={detailedContent.title}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="detail-description">Description</Label>
+                    <Textarea
+                      id="detail-description"
+                      defaultValue={detailedContent.description || ''}
+                      rows={3}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="detail-keywords">Keywords</Label>
+                      <Input
+                        id="detail-keywords"
+                        defaultValue={detailedContent.keywords || ''}
+                        className="mt-1"
+                        placeholder="Comma separated"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="detail-subject">Subject</Label>
+                      <Input
+                        id="detail-subject"
+                        defaultValue={detailedContent.subject || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="detail-language">Language</Label>
+                    <select
+                      id="detail-language"
+                      defaultValue={detailedContent.language}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-orange-500 focus:ring-brand-orange-500"
+                    >
+                      <option value="ENGLISH">English</option>
+                      <option value="FARSI">Farsi</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Transcript Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FileAudio className="h-5 w-5 mr-2 text-brand-orange-500" />
+                    Transcript
+                  </h3>
+                  
+                  {detailedContent.isProcessed && detailedContent.transcript ? (
+                    <div>
+                      <Label htmlFor="detail-transcript">Edit Transcript</Label>
+                      <Textarea
+                        id="detail-transcript"
+                        defaultValue={detailedContent.transcript}
+                        rows={12}
+                        className="mt-1 font-mono text-sm"
+                        placeholder="Transcript will appear here after processing..."
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        You can edit the transcript text. Changes will be saved when you click Save.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-4 text-center">
+                      <FileAudio className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600">
+                        {!detailedContent.isProcessed 
+                          ? 'Transcript not yet generated. Click "Generate Transcript" to process the audio.'
+                          : 'No transcript available for this content.'
+                        }
+                      </p>
+                      {!detailedContent.isProcessed && (
+                        <Button 
+                          className="mt-3"
+                          onClick={() => {
+                            handleProcess(detailedContent.id, detailedContent.title)
+                            setDetailedContent(null)
+                          }}
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          Generate Transcript
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-6 border-t">
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setDetailedContent(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      handleDelete(detailedContent.id, detailedContent.title)
+                      setDetailedContent(null)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Content
+                  </Button>
+                </div>
+                
+                <Button className="btn-primary" onClick={handleSaveDetailedChanges}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
