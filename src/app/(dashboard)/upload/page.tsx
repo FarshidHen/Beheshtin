@@ -103,6 +103,11 @@ export default function UploadPage() {
       formData.append('subject', subject)
       formData.append('language', selectedLanguage)
 
+      console.log('🚨🚨🚨 FRONTEND: About to make upload request!')
+      console.log('🚨 URL: /api/content/upload')
+      console.log('🚨 Method: POST')
+      console.log('🚨 Token:', token ? 'Present' : 'Missing')
+      
       const response = await fetch('/api/content/upload', {
         method: 'POST',
         headers: {
@@ -110,6 +115,10 @@ export default function UploadPage() {
         },
         body: formData
       })
+      
+      console.log('🚨🚨🚨 FRONTEND: Upload response received!')
+      console.log('🚨 Status:', response.status)
+      console.log('🚨 Status Text:', response.statusText)
 
       if (!response.ok) {
         const error = await response.json()
