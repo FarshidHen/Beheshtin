@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
+  const [pausedId, setPausedId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
   const [detailedContent, setDetailedContent] = useState<Content | null>(null)
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
@@ -94,6 +95,7 @@ export default function DashboardPage() {
       currentAudio.pause()
       setCurrentAudio(null)
       setPlayingId(null)
+      setPausedId(null)
     }
   }
 
@@ -177,7 +179,20 @@ export default function DashboardPage() {
 
   const handlePlay = (contentId: string, audioUrl: string, title: string) => {
     try {
-      // Stop current audio if playing
+      // If this is the same content that was paused, resume it
+      if (pausedId === contentId && currentAudio) {
+        currentAudio.play()
+        setPlayingId(contentId)
+        setPausedId(null)
+        
+        toast({
+          title: 'Resuming Audio',
+          description: `Resuming: ${title}`,
+        })
+        return
+      }
+
+      // Stop current audio if playing different content
       if (currentAudio) {
         currentAudio.pause()
         currentAudio.currentTime = 0
@@ -190,6 +205,7 @@ export default function DashboardPage() {
       audio.addEventListener('ended', () => {
         setPlayingId(null)
         setCurrentAudio(null)
+        setPausedId(null)
       })
       
       audio.addEventListener('error', () => {
@@ -200,12 +216,14 @@ export default function DashboardPage() {
         })
         setPlayingId(null)
         setCurrentAudio(null)
+        setPausedId(null)
       })
 
       // Play the audio
       audio.play()
       setCurrentAudio(audio)
       setPlayingId(contentId)
+      setPausedId(null)
       
       toast({
         title: 'Playing Audio',
@@ -221,8 +239,9 @@ export default function DashboardPage() {
   }
 
   const handlePause = () => {
-    if (currentAudio) {
+    if (currentAudio && playingId) {
       currentAudio.pause()
+      setPausedId(playingId)
       setPlayingId(null)
     }
   }
@@ -233,6 +252,7 @@ export default function DashboardPage() {
       currentAudio.currentTime = 0
       setCurrentAudio(null)
       setPlayingId(null)
+      setPausedId(null)
     }
   }
 
@@ -686,15 +706,32 @@ export default function DashboardPage() {
                                 </Button>
                               </>
                             ) : (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50"
-                                onClick={() => handlePlay(content.id, content.audioUrl, content.title)}
-                              >
-                                <Play className="h-4 w-4 mr-1" />
-                                Play
-                              </Button>
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className={`flex-1 ${
+                                    pausedId === content.id 
+                                      ? 'border-green-200 text-green-700 hover:bg-green-50' 
+                                      : 'border-brand-orange-200 text-brand-orange-700 hover:bg-brand-orange-50'
+                                  }`}
+                                  onClick={() => handlePlay(content.id, content.audioUrl, content.title)}
+                                >
+                                  <Play className="h-4 w-4 mr-1" />
+                                  {pausedId === content.id ? 'Resume' : 'Play'}
+                                </Button>
+                                {pausedId === content.id && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                                    onClick={handleStop}
+                                  >
+                                    <Square className="h-4 w-4 mr-1" />
+                                    Stop
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                           
