@@ -7,17 +7,10 @@ import { logError, logInfo } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚨🚨🚨 UPLOAD ROUTE CALLED! 🚨🚨🚨')
-    console.log('🚨 URL:', request.url)
-    console.log('🚨 Method:', request.method)
-    
     logInfo('Upload attempt started', 'UPLOAD')
     const user = authMiddleware(request)
     
-    console.log('🚨 Auth middleware result:', user instanceof NextResponse ? 'FAILED' : 'SUCCESS')
-    
     if (user instanceof NextResponse) {
-      console.log('🚨 Returning auth error:', user.status)
       return user
     }
 
