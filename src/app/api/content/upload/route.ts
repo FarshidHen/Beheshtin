@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { logError, logInfo } from '@/lib/logger'
+import { addTranscriptJob } from '@/lib/transcriptQueue'
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,9 +77,15 @@ export async function POST(request: NextRequest) {
 
     logInfo(`Content uploaded successfully: ${content.title}`, 'UPLOAD')
     
+    // Add transcript job to queue for background processing
+    const jobId = addTranscriptJob(content.id, filepath, language as 'ENGLISH' | 'FARSI')
+    
+    logInfo(`Transcript job queued: ${jobId} for content: ${content.id}`, 'UPLOAD')
+    
     return NextResponse.json({
-      message: 'Content uploaded successfully',
-      content
+      message: 'Content uploaded successfully. Transcript processing started.',
+      content,
+      transcriptJobId: jobId
     })
   } catch (error) {
     logError(error, 'UPLOAD')
