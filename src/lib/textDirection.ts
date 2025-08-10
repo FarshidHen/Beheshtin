@@ -51,3 +51,32 @@ export function getTextDirectionStyle(text: string): { direction: 'rtl' | 'ltr';
     textAlign: direction === 'rtl' ? 'right' : 'left'
   }
 }
+
+/**
+ * Returns container style object for RTL content with proper spacing
+ * @param text - The text to analyze
+ * @returns Style object with direction and padding adjustments
+ */
+export function getTextDirectionContainerStyle(text: string): { 
+  direction: 'rtl' | 'ltr'; 
+  textAlign: 'right' | 'left';
+  paddingRight?: string;
+  paddingLeft?: string;
+} {
+  const direction = getTextDirection(text)
+  if (direction === 'rtl') {
+    return {
+      direction: 'rtl',
+      textAlign: 'right',
+      paddingRight: '0.5rem', // Reduced padding for RTL
+      paddingLeft: '1rem'     // Normal padding on the left
+    }
+  } else {
+    return {
+      direction: 'ltr',
+      textAlign: 'left',
+      paddingLeft: '1rem',    // Normal padding for LTR
+      paddingRight: '0.5rem'
+    }
+  }
+}

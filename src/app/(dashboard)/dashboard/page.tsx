@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
 import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles, ArrowUpRight } from 'lucide-react'
-import { getTextDirectionStyle, getTextDirectionClass } from '@/lib/textDirection'
+import { getTextDirectionStyle, getTextDirectionClass, getTextDirectionContainerStyle, getTextDirection } from '@/lib/textDirection'
 
 interface User {
   id: string
@@ -572,7 +572,11 @@ export default function DashboardPage() {
                           >
                             <span 
                               className="flex items-center"
-                              style={getTextDirectionStyle(content.title)}
+                              style={{
+                                ...getTextDirectionStyle(content.title),
+                                paddingRight: getTextDirection(content.title) === 'rtl' ? '0' : undefined,
+                                marginRight: getTextDirection(content.title) === 'rtl' ? '0' : undefined
+                              }}
                             >
                               {content.title}
                               <ArrowUpRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-brand-orange-500" />
@@ -583,7 +587,11 @@ export default function DashboardPage() {
                           </p>
                           <CardDescription 
                             className="line-clamp-2 mt-2"
-                            style={getTextDirectionStyle(content.description || '')}
+                            style={{
+                              ...getTextDirectionStyle(content.description || ''),
+                              paddingRight: getTextDirection(content.description || '') === 'rtl' ? '0' : undefined,
+                              marginRight: getTextDirection(content.description || '') === 'rtl' ? '0' : undefined
+                            }}
                           >
                             {content.description || 'No description'}
                           </CardDescription>
