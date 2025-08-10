@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { Upload, ArrowLeft, FileAudio, Mic, Sparkles, X, Languages } from 'lucide-react'
+import { getTextDirectionStyle } from '@/lib/textDirection'
 
 export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false)
@@ -17,6 +18,8 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState<string>('ENGLISH')
   const [dragActive, setDragActive] = useState(false)
+  const [title, setTitle] = useState<string>('')
+  const [description, setDescription] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const { toast } = useToast()
@@ -92,12 +95,11 @@ export default function UploadPage() {
       
       // Add form fields
       const form = event.currentTarget
-      const title = (form.elements.namedItem('title') as HTMLInputElement)?.value || selectedFile.name
-      const description = (form.elements.namedItem('description') as HTMLTextAreaElement)?.value || ''
+      const formTitle = title || selectedFile.name
       const keywords = (form.elements.namedItem('keywords') as HTMLInputElement)?.value || ''
       const subject = (form.elements.namedItem('subject') as HTMLInputElement)?.value || ''
 
-      formData.append('title', title)
+      formData.append('title', formTitle)
       formData.append('description', description)
       formData.append('keywords', keywords)
       formData.append('subject', subject)
@@ -125,6 +127,8 @@ export default function UploadPage() {
 
       // Reset form
       setSelectedFile(null)
+      setTitle('')
+      setDescription('')
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -258,8 +262,10 @@ export default function UploadPage() {
                     id="title"
                     name="title"
                     placeholder="Enter a compelling title for your content"
-                    defaultValue={selectedFile?.name.replace(/\.[^/.]+$/, "") || ''}
+                    value={title || selectedFile?.name.replace(/\.[^/.]+$/, "") || ''}
+                    onChange={(e) => setTitle(e.target.value)}
                     className="mt-1 border-brand-orange-200 focus:border-brand-orange-500 focus:ring-brand-orange-500"
+                    style={getTextDirectionStyle(title)}
                   />
                 </div>
 
@@ -269,8 +275,11 @@ export default function UploadPage() {
                     id="description"
                     name="description"
                     placeholder="Enter a description that will help others discover your content"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                     className="mt-1 border-brand-orange-200 focus:border-brand-orange-500 focus:ring-brand-orange-500"
+                    style={getTextDirectionStyle(description)}
                   />
                 </div>
 

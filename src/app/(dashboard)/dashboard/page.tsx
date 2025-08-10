@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
 import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles, ArrowUpRight } from 'lucide-react'
+import { getTextDirectionStyle, getTextDirectionClass } from '@/lib/textDirection'
 
 interface User {
   id: string
@@ -569,7 +570,10 @@ export default function DashboardPage() {
                             className="text-lg text-gray-900 line-clamp-2 cursor-pointer hover:text-brand-orange-600 transition-colors group"
                             onClick={() => handleOpenDetailedView(content)}
                           >
-                            <span className="flex items-center">
+                            <span 
+                              className="flex items-center"
+                              style={getTextDirectionStyle(content.title)}
+                            >
                               {content.title}
                               <ArrowUpRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-brand-orange-500" />
                             </span>
@@ -577,7 +581,10 @@ export default function DashboardPage() {
                           <p className="text-xs text-brand-orange-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             Click to view details & edit
                           </p>
-                          <CardDescription className="line-clamp-2 mt-2">
+                          <CardDescription 
+                            className="line-clamp-2 mt-2"
+                            style={getTextDirectionStyle(content.description || '')}
+                          >
                             {content.description || 'No description'}
                           </CardDescription>
                           <div className="flex items-center mt-2 space-x-2">
@@ -676,7 +683,10 @@ export default function DashboardPage() {
                           {content.isProcessed && content.transcript && (
                             <div className="bg-gray-50 rounded-md p-3">
                               <h4 className="text-sm font-medium text-gray-700 mb-2">Transcript:</h4>
-                              <p className="text-xs text-gray-600 line-clamp-3">
+                              <p 
+                                className="text-xs text-gray-600 line-clamp-3"
+                                style={getTextDirectionStyle(content.transcript || '')}
+                              >
                                 {content.transcript}
                               </p>
                             </div>
@@ -784,6 +794,7 @@ export default function DashboardPage() {
                     name="title"
                     defaultValue={editingContent.title}
                     required
+                    style={getTextDirectionStyle(editingContent.title)}
                   />
                 </div>
                 
@@ -794,6 +805,7 @@ export default function DashboardPage() {
                     name="description"
                     defaultValue={editingContent.description || ''}
                     rows={3}
+                    style={getTextDirectionStyle(editingContent.description || '')}
                   />
                 </div>
 
@@ -912,6 +924,7 @@ export default function DashboardPage() {
                       id="detail-title"
                       defaultValue={detailedContent.title}
                       className="mt-1"
+                      style={getTextDirectionStyle(detailedContent.title)}
                     />
                   </div>
                   
@@ -922,6 +935,7 @@ export default function DashboardPage() {
                       defaultValue={detailedContent.description || ''}
                       rows={3}
                       className="mt-1"
+                      style={getTextDirectionStyle(detailedContent.description || '')}
                     />
                   </div>
                   
@@ -975,6 +989,7 @@ export default function DashboardPage() {
                         rows={12}
                         className="mt-1 font-mono text-sm"
                         placeholder="Transcript will appear here after processing..."
+                        style={getTextDirectionStyle(detailedContent.transcript || '')}
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         You can edit the transcript text. Changes will be saved when you click Save.
