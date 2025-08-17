@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { Play, Heart, MessageCircle, User, LogIn, Mic, Upload, Users, Shield, Sparkles, Headphones, Zap, Globe, Star } from 'lucide-react'
+import { Play, Heart, MessageCircle, User, LogIn, Mic, Pause, Square, Download, Eye, EyeIcon, FileText, Volume2, Users, Sparkles, Globe2 } from 'lucide-react'
+import { getTextDirectionStyle, getTextDirectionClass } from '@/lib/textDirection'
 
 interface Content {
   id: string
@@ -29,10 +30,44 @@ interface Content {
 export default function HomePage() {
   const [contents, setContents] = useState<Content[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const [pausedId, setPausedId] = useState<string | null>(null)
+  const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null)
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     fetchPublicContent()
+  }, [])
+
+  // Cleanup audio when component unmounts
+  useEffect(() => {
+    const stopAudio = () => {
+      const audio = currentAudioRef.current
+      if (audio) {
+        try {
+          audio.pause()
+          audio.currentTime = 0
+        } catch (_) {}
+      }
+      setCurrentAudio(null)
+      setPlayingId(null)
+      setPausedId(null)
+    }
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopAudio()
+    }
+
+    window.addEventListener('beforeunload', stopAudio)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('beforeunload', stopAudio)
+      stopAudio()
+    }
   }, [])
 
   const fetchPublicContent = async () => {
@@ -47,8 +82,8 @@ export default function HomePage() {
       setContents(data.contents)
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to load content',
+        title: 'خطا',
+        description: 'خطا در بارگذاری محتوا',
         variant: 'destructive'
       })
     } finally {
@@ -56,18 +91,121 @@ export default function HomePage() {
     }
   }
 
+  const handlePlay = (contentId: string, audioUrl: string, title: string) => {
+    try {
+      // If this is the same content that was paused, resume it
+      if (pausedId === contentId && currentAudio) {
+        currentAudio.play()
+        setPlayingId(contentId)
+        setPausedId(null)
+        return
+      }
+
+      // Stop current audio if playing different content
+      if (currentAudio) {
+        currentAudio.pause()
+        currentAudio.currentTime = 0
+      }
+
+      // Create new audio element
+      const audio = new Audio(audioUrl)
+      currentAudioRef.current = audio
+      
+      // Set up event listeners
+      audio.addEventListener('ended', () => {
+        setPlayingId(null)
+        setCurrentAudio(null)
+        currentAudioRef.current = null
+        setPausedId(null)
+      })
+      
+      audio.addEventListener('error', () => {
+        setPlayingId(null)
+        setCurrentAudio(null)
+        currentAudioRef.current = null
+        setPausedId(null)
+        toast({
+          title: 'خطا',
+          description: 'خطا در پخش فایل صوتی',
+          variant: 'destructive'
+        })
+      })
+      
+      // Start playing
+      audio.play()
+      setCurrentAudio(audio)
+      setPlayingId(contentId)
+      setPausedId(null)
+      
+    } catch (error) {
+      toast({
+        title: 'خطا',
+        description: 'خطا در پخش فایل صوتی',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handlePause = () => {
+    if (currentAudio && playingId) {
+      currentAudio.pause()
+      setPausedId(playingId)
+      setPlayingId(null)
+    }
+  }
+
+  const handleStop = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      setCurrentAudio(null)
+      currentAudioRef.current = null
+      setPlayingId(null)
+      setPausedId(null)
+    }
+  }
+
   const handleLike = async (contentId: string) => {
     toast({
-      title: 'Like',
-      description: 'Like functionality would be implemented here',
+      title: 'پسندیدن',
+      description: 'قابلیت پسندیدن به زودی فعال خواهد شد',
     })
   }
 
   const handleComment = async (contentId: string) => {
     toast({
-      title: 'Comment',
-      description: 'Comment functionality would be implemented here',
+      title: 'نظر',
+      description: 'قابلیت نظردهی به زودی فعال خواهد شد',
     })
+  }
+
+  const handleDownloadTranscript = async (content: Content) => {
+    try {
+      const { generateTranscriptPDF } = await import('@/lib/pdfGenerator')
+      
+      await generateTranscriptPDF({
+        title: content.title,
+        transcript: content.transcript,
+        author: content.user.name,
+        createdAt: content.createdAt,
+        language: 'FARSI'
+      })
+      
+      toast({
+        title: 'دانلود',
+        description: 'متن صوتی با موفقیت دانلود شد',
+      })
+    } catch (error) {
+      toast({
+        title: 'خطا',
+        description: 'خطا در دانلود متن صوتی',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const toggleTranscriptExpansion = (contentId: string) => {
+    setExpandedTranscript(expandedTranscript === contentId ? null : contentId)
   }
 
   if (isLoading) {
@@ -75,59 +213,37 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-orange-500 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Loading Beheshtin...</p>
+          <p className="mt-4 text-lg text-gray-600">در حال بارگذاری بهشتین...</p>
         </div>
       </div>
     )
   }
 
   return (
-          <div style={{ 
-            minHeight: '100vh', 
-            background: 'linear-gradient(135deg, #fff7ed 0%, #fffbeb 50%, #f0fdf4 100%)' 
-          }}>
-        {/* Version Indicator */}
-        <div style={{
-          position: 'fixed',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 50,
-          background: 'linear-gradient(90deg, #f97316, #22c55e)',
-          color: 'white',
-          padding: '0.25rem 0.75rem',
-          borderRadius: '9999px',
-          fontSize: '0.875rem',
-          fontWeight: 'bold',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-        }}>
-          v3.2 - INLINE STYLES
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-orange-200 sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4 sm:py-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Mic className="h-6 w-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
-                Beheshtin
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">
+                بهشتین
               </h1>
             </div>
-            <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="flex space-x-2 rtl:space-x-reverse">
               <Link href="/signin">
-                              <Button variant="outline" className="border-brand-orange-300 text-brand-orange-700 hover:bg-brand-orange-50 hover:border-brand-orange-400 transition-all duration-200">
-                <LogIn className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Sign In</span>
-                <span className="sm:hidden">Login</span>
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-gradient-to-r from-brand-orange-500 to-brand-green-500 hover:from-brand-orange-600 hover:to-brand-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-                  <User className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Get Started</span>
-                  <span className="sm:hidden">Join</span>
+                <Button variant="ghost" size="sm" className="text-gray-700 hover:text-orange-600">
+                  <LogIn className="h-4 w-4 mr-1 ml-1" />
+                  ورود
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm" className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white">
+                  <User className="h-4 w-4 mr-1 ml-1" />
+                  ثبت نام
                 </Button>
               </Link>
             </div>
@@ -135,269 +251,94 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 sm:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center relative z-10">
-            <div className="mb-8">
-              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-brand-orange-100 to-brand-green-100 rounded-full text-sm font-medium text-brand-orange-800 mb-6">
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI-Powered Voice Platform
-              </div>
-              <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 leading-tight">
-                <span className="bg-gradient-to-r from-brand-orange-600 via-yellow-600 to-brand-green-600 bg-clip-text text-transparent">
-                  Transform Your Voice
-                </span>
-                <br />
-                <span className="text-gray-800">Into Amazing Content</span>
+      {/* Service Description Section */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight">
+                صدای شما، <span className="bg-gradient-to-r from-orange-600 to-green-600 bg-clip-text text-transparent">داستان شما</span>
               </h2>
-              <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-4xl mx-auto leading-relaxed px-4">
-                Upload, transcribe, and share your voice content with our advanced AI platform. 
-                Create podcasts, interviews, stories, and more with automatic transcription and intelligent analysis.
+              <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto" style={{ direction: 'rtl' }}>
+                بهشتین پلتفرمی است برای به اشتراک گذاری محتوای صوتی، تجربیات و دانش شما. 
+                صدای خود را ضبط کنید، متن آن را دریافت کنید و با جهان به اشتراک بگذارید.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 px-4">
-              <Link href="/signup" className="w-full sm:w-auto">
-                <Button className="bg-gradient-to-r from-brand-orange-500 to-brand-green-500 hover:from-brand-orange-600 hover:to-brand-green-600 text-white text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
-                  Start Creating Today
-                </Button>
-              </Link>
-              <Link href="#features" className="w-full sm:w-auto">
-                <Button variant="outline" className="border-2 border-brand-orange-300 text-brand-orange-700 hover:bg-brand-orange-50 hover:border-brand-orange-400 text-lg sm:text-xl px-8 sm:px-10 py-4 w-full sm:w-auto transition-all duration-200">
-                  <Play className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
-                  See How It Works
-                </Button>
-              </Link>
+            
+            {/* Key Features */}
+            <div className="grid md:grid-cols-3 gap-8 mt-12">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <Volume2 className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">ضبط آسان</h3>
+                <p className="text-gray-600 text-sm" style={{ direction: 'rtl' }}>
+                  به راحتی صدای خود را ضبط کنید و آپلود کنید
+                </p>
+              </div>
+              
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">تبدیل خودکار</h3>
+                <p className="text-gray-600 text-sm" style={{ direction: 'rtl' }}>
+                  فایل صوتی شما به طور خودکار به متن تبدیل می‌شود
+                </p>
+              </div>
+              
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">اشتراک‌گذاری</h3>
+                <p className="text-gray-600 text-sm" style={{ direction: 'rtl' }}>
+                  محتوای خود را با دیگران به اشتراک بگذارید
+                </p>
+              </div>
             </div>
           </div>
         </div>
         
         {/* Background decoration */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-brand-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-2000"></div>
-          <div className="absolute bottom-20 left-1/4 w-48 h-48 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse animation-delay-4000"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+          <div className="absolute top-40 right-10 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Published Content Section */}
       <section className="py-16 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div className="space-y-2">
-                          <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
-              1000+
-            </div>
-            <p className="text-gray-600 font-medium">Voice Content</p>
-          </div>
-          <div className="space-y-2">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
-              500+
-            </div>
-            <p className="text-gray-600 font-medium">Active Creators</p>
-          </div>
-          <div className="space-y-2">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
-              99.9%
-            </div>
-            <p className="text-gray-600 font-medium">AI Accuracy</p>
-          </div>
-          <div className="space-y-2">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-orange-600 to-brand-green-600 bg-clip-text text-transparent">
-              24/7
-            </div>
-              <p className="text-gray-600 font-medium">Platform Uptime</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 sm:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 sm:mb-20">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">Why Choose Beheshtin?</h3>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Experience the future of voice content creation with our cutting-edge AI-powered platform
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">محتوای منتشر شده</h3>
+            <p className="text-lg text-gray-600" style={{ direction: 'rtl' }}>
+              به آخرین محتوای صوتی منتشر شده توسط کاربران گوش دهید
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-orange-200 hover:border-orange-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">Easy Upload</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Upload your voice content with just a few clicks. Support for MP3, WAV, M4A, and more audio formats. 
-                  Our platform handles the rest with automatic processing and optimization.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-green-200 hover:border-green-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Zap className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">AI Transcription</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Advanced AI technology automatically transcribes your audio with 99.9% accuracy. 
-                  Get instant text versions, keyword extraction, and intelligent content analysis.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-orange-200 hover:border-orange-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Users className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">Vibrant Community</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Connect with fellow creators, share your content, and build your audience. 
-                  Like, comment, and discover amazing voice content from around the world.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-green-200 hover:border-green-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Headphones className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">Smart Playback</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Enjoy high-quality audio playback with synchronized transcripts. 
-                  Follow along with the text while listening to your favorite content.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-orange-200 hover:border-orange-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Globe className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">Global Reach</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Share your voice with the world. Our platform supports multiple languages 
-                  and reaches audiences across different time zones and cultures.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-green-200 hover:border-green-300 transform hover:-translate-y-2">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <CardTitle className="text-xl sm:text-2xl text-gray-900">Secure & Private</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-gray-600 leading-relaxed">
-                  Your content is protected with enterprise-grade security. 
-                  Choose privacy settings and control who can access your voice content.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20 sm:py-32 bg-gradient-to-br from-orange-50 to-green-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 sm:mb-20">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">How It Works</h3>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Get started with Beheshtin in just three simple steps
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <span className="text-2xl font-bold text-white">1</span>
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Upload Your Audio</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Simply drag and drop your audio file or click to upload. 
-                We support all major audio formats up to 100MB.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <span className="text-2xl font-bold text-white">2</span>
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">AI Processing</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Our AI automatically transcribes your audio, extracts keywords, 
-                and generates a detailed analysis of your content.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <span className="text-2xl font-bold text-white">3</span>
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Share & Connect</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Publish your content, share it with the community, 
-                and connect with listeners and fellow creators.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Content Section */}
-      <section id="content" className="py-20 sm:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 sm:mb-16 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">Featured Content</h2>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Discover amazing voice content from our talented community of creators
-            </p>
-          </div>
-
           {contents.length === 0 ? (
-            <Card className="max-w-2xl mx-auto border-2 border-dashed border-orange-300 bg-gradient-to-br from-orange-50 to-green-50">
-              <CardContent className="text-center py-16 sm:py-20">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
-                  <Play className="h-12 w-12 sm:h-16 sm:w-16 text-white" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Be the First Creator!</h3>
-                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                  Start your journey as a voice content creator. Upload your first audio and inspire others to join our community.
-                </p>
-                <Link href="/signup">
-                  <Button className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white text-lg px-8 py-4 shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105">
-                    <User className="h-5 w-5 mr-3" />
-                    Start Creating Now
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <div className="text-center py-16">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mic className="h-12 w-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">هنوز محتوایی منتشر نشده</h3>
+              <p className="text-gray-600 mb-6" style={{ direction: 'rtl' }}>
+                اولین نفری باشید که محتوای صوتی خود را با دیگران به اشتراک می‌گذارد
+              </p>
+              <Link href="/signup">
+                <Button className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  شروع کنید
+                </Button>
+              </Link>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-              {contents.map((content, index) => (
-                <Card key={content.id} className="group hover:shadow-2xl transition-all duration-300 bg-white border-orange-200 hover:border-orange-300 transform hover:-translate-y-2 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-                  <CardHeader>
-                    <div className="flex items-center space-x-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {contents.map((content) => (
+                <Card key={content.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 border border-orange-100">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
                       <Avatar className="border-2 border-orange-200 w-12 h-12">
                         <AvatarImage src={content.user.avatar} />
                         <AvatarFallback className="bg-gradient-to-r from-orange-500 to-green-500 text-white text-sm">
@@ -407,47 +348,124 @@ export default function HomePage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-gray-900 truncate">{content.user.name}</p>
                         <p className="text-xs text-gray-500">
-                          {new Date(content.createdAt).toLocaleDateString()}
+                          {new Date(content.createdAt).toLocaleDateString('fa-IR')}
                         </p>
                       </div>
                     </div>
-                    <CardTitle className="text-lg text-gray-900 line-clamp-2">{content.title}</CardTitle>
-                    <CardDescription className="text-gray-600 text-sm line-clamp-2">
-                      {content.description || 'No description available'}
-                    </CardDescription>
+                    <CardTitle className="text-lg text-gray-900 line-clamp-2" style={getTextDirectionStyle(content.title)}>
+                      {content.title}
+                    </CardTitle>
+                    {content.description && (
+                      <CardDescription className="text-gray-600 text-sm line-clamp-2" style={getTextDirectionStyle(content.description)}>
+                        {content.description}
+                      </CardDescription>
+                    )}
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-orange-50 to-green-50 p-4 rounded-lg border border-orange-100">
-                        <p className="text-sm text-gray-700 line-clamp-3">
-                          {content.transcript.substring(0, 120)}...
-                        </p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="flex space-x-4">
+                  
+                  <CardContent className="space-y-4">
+                    {/* Transcript Preview/Full View */}
+                    <div className="bg-gradient-to-r from-orange-50 to-green-50 p-4 rounded-lg border border-orange-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-gray-700">متن صوتی:</h4>
+                        <div className="flex space-x-1 rtl:space-x-reverse">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleLike(content.id)}
-                            className="flex items-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 px-3"
+                            onClick={() => toggleTranscriptExpansion(content.id)}
+                            className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900"
                           >
-                            <Heart className="h-4 w-4 mr-1" />
-                            <span className="text-sm">{content._count.likes}</span>
+                            <EyeIcon className="h-3 w-3 mr-1" />
+                            {expandedTranscript === content.id ? 'بستن' : 'مشاهده'}
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleComment(content.id)}
-                            className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 h-8 px-3"
+                            onClick={() => handleDownloadTranscript(content)}
+                            className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900"
                           >
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            <span className="text-sm">{content._count.comments}</span>
+                            <Download className="h-3 w-3 mr-1" />
+                            دانلود
                           </Button>
                         </div>
-                        <Button size="sm" className="bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white text-sm h-8 px-4 shadow-lg">
+                      </div>
+                      
+                      {expandedTranscript === content.id ? (
+                        <div 
+                          className="text-sm text-gray-700 max-h-64 overflow-y-auto bg-white p-3 rounded border border-gray-200 leading-relaxed"
+                          style={getTextDirectionStyle(content.transcript)}
+                        >
+                          {content.transcript}
+                        </div>
+                      ) : (
+                        <p 
+                          className="text-sm text-gray-700 line-clamp-3 leading-relaxed"
+                          style={getTextDirectionStyle(content.transcript)}
+                        >
+                          {content.transcript.substring(0, 120)}...
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Audio Controls */}
+                    <div className="flex space-x-2 rtl:space-x-reverse mb-4">
+                      {playingId === content.id ? (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 border-orange-200 text-orange-700 hover:bg-orange-50"
+                            onClick={handlePause}
+                          >
+                            <Pause className="h-4 w-4 mr-1" />
+                            توقف موقت
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                            onClick={handleStop}
+                          >
+                            <Square className="h-4 w-4 mr-1" />
+                            پایان
+                          </Button>
+                        </>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className={`flex-1 ${
+                            pausedId === content.id 
+                              ? 'border-green-200 text-green-700 hover:bg-green-50' 
+                              : 'border-orange-200 text-orange-700 hover:bg-orange-50'
+                          }`}
+                          onClick={() => handlePlay(content.id, content.audioUrl, content.title)}
+                        >
                           <Play className="h-4 w-4 mr-1" />
-                          Listen
+                          {pausedId === content.id ? 'ادامه' : 'پخش'}
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Interaction Controls */}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                      <div className="flex space-x-4 rtl:space-x-reverse">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLike(content.id)}
+                          className="flex items-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 px-3"
+                        >
+                          <Heart className="h-4 w-4 ml-1" />
+                          <span className="text-sm">{content._count.likes}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleComment(content.id)}
+                          className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 h-8 px-3"
+                        >
+                          <MessageCircle className="h-4 w-4 ml-1" />
+                          <span className="text-sm">{content._count.comments}</span>
                         </Button>
                       </div>
                     </div>
@@ -459,82 +477,67 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 sm:py-32 bg-gradient-to-r from-orange-500 to-green-500">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Ready to Share Your Voice?
-          </h3>
-          <p className="text-lg sm:text-xl text-orange-100 mb-8 leading-relaxed">
-            Join thousands of creators who are already sharing their stories, 
-            knowledge, and creativity with the world through Beheshtin.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Link href="/signup" className="w-full sm:w-auto">
-              <Button className="bg-white text-orange-600 hover:bg-gray-100 text-lg px-8 py-4 w-full sm:w-auto shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105">
-                <Sparkles className="h-5 w-5 mr-3" />
-                Start Creating Today
+      {/* Floating Audio Player - Shows when audio is playing */}
+      {playingId && currentAudio && (
+        <div className="fixed bottom-6 left-6 right-6 bg-white rounded-lg shadow-2xl border border-orange-200 p-4 z-50 max-w-md mx-auto">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center">
+              <Volume2 className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                در حال پخش...
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {contents.find(c => c.id === playingId)?.title}
+              </p>
+            </div>
+            <div className="flex space-x-1 rtl:space-x-reverse">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePause}
+                className="h-8 w-8 p-0"
+              >
+                <Pause className="h-4 w-4" />
               </Button>
-            </Link>
-            <Link href="/signin" className="w-full sm:w-auto">
-              <Button variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-orange-600 text-lg px-8 py-4 w-full sm:w-auto transition-all duration-200">
-                <LogIn className="h-5 w-5 mr-3" />
-                Sign In
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStop}
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              >
+                <Square className="h-4 w-4" />
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
-      </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-10">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Mic className="h-6 w-6 text-white" />
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-400 to-green-400 bg-clip-text text-transparent">
-                  Beheshtin
-                </h3>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-3 rtl:space-x-reverse mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Mic className="h-6 w-6 text-white" />
               </div>
-              <p className="text-gray-300 mb-6 max-w-md text-base leading-relaxed">
-                The ultimate platform for voice content creators. Upload, transcribe, and share your voice with the world using advanced AI technology.
-              </p>
-              <div className="flex space-x-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Star className="h-5 w-5 text-white" />
-                </div>
-              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-green-400 bg-clip-text text-transparent">
+                بهشتین
+              </h3>
             </div>
-            <div>
-              <h4 className="text-lg sm:text-xl font-semibold mb-6">Quick Links</h4>
-              <ul className="space-y-3">
-                <li><Link href="/signup" className="text-gray-300 hover:text-orange-400 transition-colors text-base">Get Started</Link></li>
-                <li><Link href="/signin" className="text-gray-300 hover:text-orange-400 transition-colors text-base">Sign In</Link></li>
-                <li><Link href="#features" className="text-gray-300 hover:text-orange-400 transition-colors text-base">Features</Link></li>
-                <li><Link href="#content" className="text-gray-300 hover:text-orange-400 transition-colors text-base">Explore Content</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg sm:text-xl font-semibold mb-6">Contact</h4>
-              <p className="text-gray-300 mb-4 text-base leading-relaxed">
-                Have questions? We're here to help you succeed with your voice content journey.
-              </p>
-              <p className="text-orange-400 text-base font-medium">support@beheshtin.com</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-10 sm:mt-12 pt-8 sm:pt-10 text-center">
-            <p className="text-gray-400 text-base">
-              © 2024 Beheshtin. All rights reserved. Made with ❤️ for voice creators worldwide.
+            <p className="text-gray-400 mb-6 max-w-2xl mx-auto" style={{ direction: 'rtl' }}>
+              پلتفرمی برای به اشتراک گذاری صدا، تجربیات و دانش. 
+              با بهشتین صدای خود را به جهان برسانید.
             </p>
+            <div className="flex justify-center space-x-6 rtl:space-x-reverse">
+              <Link href="/signin" className="text-gray-400 hover:text-orange-400 transition-colors">
+                ورود
+              </Link>
+              <Link href="/signup" className="text-gray-400 hover:text-green-400 transition-colors">
+                ثبت نام
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

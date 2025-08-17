@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles, ArrowUpRight } from 'lucide-react'
+import { Upload, FileAudio, Users, Settings, LogOut, Mic, Plus, Play, Pause, Square, Heart, MessageCircle, TrendingUp, Calendar, Edit, Trash2, Zap, Languages, CheckCircle, Sparkles, ArrowUpRight, Eye, EyeOff, Download } from 'lucide-react'
 import { getTextDirectionStyle, getTextDirectionClass, getTextDirectionContainerStyle, getTextDirection } from '@/lib/textDirection'
 
 interface User {
@@ -296,6 +296,79 @@ export default function DashboardPage() {
     }
   }
 
+  const handlePublishToggle = async (contentId: string, title: string, currentStatus: boolean) => {
+    const action = currentStatus ? 'unpublish' : 'publish'
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/content/${contentId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          isPublished: !currentStatus
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} content`)
+      }
+
+      // Update local state
+      setContents(contents.map(c => 
+        c.id === contentId 
+          ? { ...c, isPublished: !currentStatus }
+          : c
+      ))
+
+      toast({
+        title: 'Success',
+        description: `"${title}" has been ${!currentStatus ? 'published' : 'unpublished'} successfully`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to ${action} content`,
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleDownloadTranscript = async (content: Content) => {
+    if (!content.transcript) {
+      toast({
+        title: 'Error',
+        description: 'No transcript available for download',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      const { generateTranscriptPDF } = await import('@/lib/pdfGenerator')
+      
+      await generateTranscriptPDF({
+        title: content.title,
+        transcript: content.transcript,
+        author: user?.name || 'Unknown',
+        createdAt: content.createdAt,
+        language: content.language
+      })
+      
+      toast({
+        title: 'Success',
+        description: 'Transcript downloaded successfully',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download transcript',
+        variant: 'destructive'
+      })
+    }
+  }
   const handleProcess = async (contentId: string, title: string) => {
     setProcessingIds(prev => new Set([...prev, contentId]))
 
@@ -690,7 +763,7 @@ export default function DashboardPage() {
                           {/* Transcript Preview */}
                           {content.isProcessed && content.transcript && (
                             <div className="bg-gray-50 rounded-md p-3">
-                              <h4 className="text-sm font-medium text-gray-700 mb-2">Transcript:</h4>
+                              <div className="flex items-center justify-between mb-2"><h4 className="text-sm font-medium text-gray-700">Transcript:</h4><Button variant="ghost" size="sm" onClick={() => handleDownloadTranscript(content)} className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900"><Download className="h-3 w-3 mr-1" />Download</Button></div>
                               <p 
                                 className="text-xs text-gray-600 line-clamp-3"
                                 style={getTextDirectionStyle(content.transcript || '')}
@@ -754,6 +827,34 @@ export default function DashboardPage() {
                           </div>
                           
                           {/* Edit/Delete Controls */}
+                          {/* Publish/Unpublish Control */}
+                          <div className="mb-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className={`w-full ${
+                                content.isPublished 
+                                  ? 'border-amber-200 text-amber-700 hover:bg-amber-50' 
+                                  : 'border-blue-200 text-blue-700 hover:bg-blue-50'
+                              }`}
+                              onClick={() => handlePublishToggle(content.id, content.title, content.isPublished)}
+                              disabled={!content.isProcessed}
+                              title={!content.isProcessed ? 'Content must be processed before publishing' : ''}
+                            >
+                              {content.isPublished ? (
+                                <>
+                                  <EyeOff className="h-4 w-4 mr-1" />
+                                  Unpublish
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Publish
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          
                           <div className="flex space-x-2">
                             <Button 
                               variant="outline" 
