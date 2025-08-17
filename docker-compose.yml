@@ -3,12 +3,10 @@ version: '3.8'
 services:
   app:
     build: .
-    ports:
-      - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/voice_content_platform
       - NEXTAUTH_SECRET=devsecret
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=https://beheshtin.com
     depends_on:
       - db
     volumes:
@@ -25,6 +23,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public/uploads:/app/public/uploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:
