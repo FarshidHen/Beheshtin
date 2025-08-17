@@ -7,10 +7,17 @@ import OpenAI from 'openai'
 import { createReadStream } from 'fs'
 import { logInfo, logError } from './logger'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client lazily to avoid build-time issues
+let openai: OpenAI | null = null
+
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || "dummy-key",
+    })
+  }
+  return openai
+}
 
 export interface TranscriptResult {
   transcript: string
@@ -45,7 +52,7 @@ export async function transcribeAudio(
     
     // Call OpenAI Whisper API
     // Let Whisper auto-detect language by omitting explicit language parameter
-    const response = await openai.audio.transcriptions.create({
+    const response = await getOpenAI().audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
       response_format: 'verbose_json', // Get additional metadata
