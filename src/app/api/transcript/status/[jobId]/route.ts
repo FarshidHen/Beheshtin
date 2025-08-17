@@ -42,6 +42,7 @@ export async function GET(
       maxAttempts: job.maxAttempts,
       createdAt: job.createdAt,
       processedAt: job.processedAt,
+      progress: job.progress,
       error: job.error
     })
 
@@ -53,3 +54,6 @@ export async function GET(
     )
   }
 }
+
+
+

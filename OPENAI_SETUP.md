@@ -63,3 +63,6 @@ The Whisper integration supports:
 - **Scalability**: Queue system handles multiple files
 - **Cost optimization**: Only processes when needed
 - **Language detection**: Automatically detects Farsi vs English content
+
+
+

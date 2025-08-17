@@ -6,8 +6,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/voice_content_platform
-      - NEXTAUTH_SECRET=your-production-secret-key-here
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/voice_content_platform
+      - NEXTAUTH_SECRET=devsecret
       - NEXTAUTH_URL=http://localhost:3000
     depends_on:
       - db
@@ -20,7 +20,7 @@ services:
     environment:
       - POSTGRES_DB=voice_content_platform
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

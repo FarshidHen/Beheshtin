@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { isPublished } = await request.json()
 
-    // Get the content to check ownership
+    // Get the content to check ownership and current status
     const content = await prisma.content.findFirst({
       where: {
         id: params.id,
@@ -76,3 +76,4 @@ export async function PATCH(
     )
   }
 }
+

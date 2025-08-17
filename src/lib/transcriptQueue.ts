@@ -18,12 +18,14 @@ export interface TranscriptJob {
   createdAt: Date
   processedAt?: Date
   error?: string
+  progress: number
 }
 
 // In-memory queue (for simple implementation)
 // For production, consider Redis or a proper queue system like Bull
 const transcriptQueue: TranscriptJob[] = []
 const processingJobs = new Set<string>()
+const jobProgressIntervals = new Map<string, NodeJS.Timeout>()
 
 /**
  * Add transcript job to queue
@@ -47,7 +49,8 @@ export function addTranscriptJob(
     attempts: 0,
     maxAttempts: 3,
     status: 'pending',
-    createdAt: new Date()
+    createdAt: new Date(),
+    progress: 0
   }
   
   transcriptQueue.push(job)
@@ -75,6 +78,7 @@ async function processQueue(): Promise<void> {
   job.status = 'processing'
   job.attempts++
   processingJobs.add(job.id)
+  job.progress = Math.max(job.progress, 5)
   
   logInfo(`Processing transcript job: ${job.id}`, 'QUEUE')
   
@@ -84,28 +88,62 @@ async function processQueue(): Promise<void> {
     if (!validation.valid) {
       throw new Error(validation.error || 'File validation failed')
     }
-    
-    // Transcribe audio
-    const result = await transcribeAudio(job.filePath, job.language)
-    
-    if ('error' in result) {
-      throw new Error(result.error)
+    job.progress = Math.max(job.progress, 10)
+
+    // Start an interval to simulate progress up to 90% while processing
+    if (!jobProgressIntervals.has(job.id)) {
+      const interval = setInterval(() => {
+        const tracked = transcriptQueue.find(j => j.id === job.id)
+        if (!tracked || tracked.status !== 'processing') {
+          clearInterval(interval)
+          jobProgressIntervals.delete(job.id)
+          return
+        }
+        if (tracked.progress < 90) {
+          tracked.progress = Math.min(90, tracked.progress + 5)
+        }
+      }, 1000)
+      jobProgressIntervals.set(job.id, interval)
     }
-    
-    // Update database with transcript
-    await prisma.content.update({
-      where: { id: job.contentId },
-      data: {
-        transcript: result.transcript,
-        language: result.language,
-        isProcessed: true,
-        editedTranscript: result.transcript // Set initial edited transcript
+
+    // Decide path: real Whisper if key present, else mock
+    if (process.env.OPENAI_API_KEY) {
+      const result = await transcribeAudio(job.filePath, job.language)
+      if ('error' in result) {
+        throw new Error(result.error)
       }
-    })
-    
+
+      // Update database with transcript
+      await prisma.content.update({
+        where: { id: job.contentId },
+        data: {
+          transcript: result.transcript,
+          language: result.language,
+          isProcessed: true,
+          editedTranscript: result.transcript
+        }
+      })
+    } else {
+      // Mock path: simulate a bit of work then save placeholder transcript
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+      const nowIso = new Date().toISOString()
+      const mockText = `Mock transcript generated at ${nowIso}. This is placeholder text.`
+      await prisma.content.update({
+        where: { id: job.contentId },
+        data: {
+          transcript: mockText,
+          isProcessed: true,
+          editedTranscript: mockText
+        }
+      })
+    }
+
     // Mark job as completed
     job.status = 'completed'
     job.processedAt = new Date()
+    job.progress = 100
+    const interval = jobProgressIntervals.get(job.id)
+    if (interval) { clearInterval(interval); jobProgressIntervals.delete(job.id) }
     
     logInfo(`Transcript job completed: ${job.id}`, 'QUEUE')
     
@@ -120,6 +158,8 @@ async function processQueue(): Promise<void> {
       logInfo(`Retrying transcript job: ${job.id} (attempt ${job.attempts + 1}/${job.maxAttempts})`, 'QUEUE')
     } else {
       job.status = 'failed'
+      const interval = jobProgressIntervals.get(job.id)
+      if (interval) { clearInterval(interval); jobProgressIntervals.delete(job.id) }
       
       // Update database to mark as failed
       await prisma.content.update({
@@ -208,3 +248,6 @@ function isRetryableError(error: any): boolean {
 
 // Run cleanup every hour
 setInterval(cleanupOldJobs, 60 * 60 * 1000)
+
+
+

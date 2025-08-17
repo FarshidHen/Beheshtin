@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,13 +43,19 @@ export default function DashboardPage() {
   const [contents, setContents] = useState<Content[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [pausedId, setPausedId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
   const [detailedContent, setDetailedContent] = useState<Content | null>(null)
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+  const [processingJobs, setProcessingJobs] = useState<Record<string, { jobId: string, status: 'queued' | 'processing', startedAt: number }>>({})
   const router = useRouter()
   const { toast } = useToast()
+  // Determine if the current user can edit content
+  const canEdit = user && ['ADMIN', 'PUBLISHER', 'EDITOR'].includes(user.role)
+  const POLL_INTERVAL_MS = 5000
+  const POLL_TIMEOUT_MS = 5 * 60 * 1000
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -63,6 +69,35 @@ export default function DashboardPage() {
     setUser(JSON.parse(userData))
     fetchContents(token)
   }, [router])
+
+  // Stop any playing audio when leaving the page or when tab is hidden
+  useEffect(() => {
+    const stopAudio = () => {
+      const audio = currentAudioRef.current
+      if (audio) {
+        try {
+          audio.pause()
+          audio.currentTime = 0
+        } catch (_) {}
+      }
+      setCurrentAudio(null)
+      setPlayingId(null)
+      setPausedId(null)
+    }
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopAudio()
+    }
+
+    window.addEventListener('beforeunload', stopAudio)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('beforeunload', stopAudio)
+      stopAudio()
+    }
+  }, [])
 
   const fetchContents = async (token: string) => {
     try {
@@ -201,11 +236,13 @@ export default function DashboardPage() {
 
       // Create new audio element
       const audio = new Audio(audioUrl)
+      currentAudioRef.current = audio
       
       // Set up event listeners
       audio.addEventListener('ended', () => {
         setPlayingId(null)
         setCurrentAudio(null)
+        currentAudioRef.current = null
         setPausedId(null)
       })
       
@@ -217,6 +254,7 @@ export default function DashboardPage() {
         })
         setPlayingId(null)
         setCurrentAudio(null)
+        currentAudioRef.current = null
         setPausedId(null)
       })
 
@@ -252,6 +290,7 @@ export default function DashboardPage() {
       currentAudio.pause()
       currentAudio.currentTime = 0
       setCurrentAudio(null)
+      currentAudioRef.current = null
       setPlayingId(null)
       setPausedId(null)
     }
@@ -316,6 +355,8 @@ export default function DashboardPage() {
         throw new Error(`Failed to ${action} content`)
       }
 
+      const data = await response.json()
+      
       // Update local state
       setContents(contents.map(c => 
         c.id === contentId 
@@ -369,6 +410,7 @@ export default function DashboardPage() {
       })
     }
   }
+
   const handleProcess = async (contentId: string, title: string) => {
     setProcessingIds(prev => new Set([...prev, contentId]))
 
@@ -386,30 +428,65 @@ export default function DashboardPage() {
       }
 
       const result = await response.json()
-      
-      // Update local state
-      setContents(contents.map(c => 
-        c.id === contentId 
-          ? { ...c, transcript: result.content.transcript, isProcessed: true }
-          : c
-      ))
 
-      toast({
-        title: 'Success!',
-        description: `Transcript generated for "${title}"`,
-      })
+      // If background job started, poll status
+      if (result.jobId) {
+        setProcessingJobs(prev => ({
+          ...prev,
+          [contentId]: { jobId: result.jobId, status: 'queued', startedAt: Date.now() }
+        }))
+
+        const start = Date.now()
+        const poll = async () => {
+          try {
+            const statusRes = await fetch(`/api/transcript/status/${result.jobId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (!statusRes.ok) throw new Error('Status check failed')
+            const status = await statusRes.json()
+
+            if (status.status === 'processing' && processingJobs[contentId]?.status !== 'processing') {
+              setProcessingJobs(prev => ({ ...prev, [contentId]: { ...prev[contentId], status: 'processing' } }))
+            }
+
+            if (status.status === 'completed') {
+              // Refresh this content item
+              const contentRes = await fetch(`/api/content/${contentId}`, { headers: { 'Authorization': `Bearer ${token}` } })
+              if (contentRes.ok) {
+                const { content } = await contentRes.json()
+                setContents(prev => prev.map(c => c.id === contentId ? { ...c, ...content } : c))
+              }
+              toast({ title: 'Success!', description: `Transcript generated for "${title}"` })
+              setProcessingIds(prev => { const s = new Set(prev); s.delete(contentId); return s })
+              setProcessingJobs(prev => { const { [contentId]: _, ...rest } = prev; return rest })
+              return
+            }
+
+            // Optionally surface progress in future (status.progress 0..100)
+            if (Date.now() - start >= POLL_TIMEOUT_MS) {
+              throw new Error('Timeout waiting for transcription')
+            }
+
+            setTimeout(poll, POLL_INTERVAL_MS)
+          } catch (e) {
+            setProcessingIds(prev => { const s = new Set(prev); s.delete(contentId); return s })
+            setProcessingJobs(prev => { const { [contentId]: _, ...rest } = prev; return rest })
+            toast({ title: 'Error', description: 'Transcript generation failed or timed out', variant: 'destructive' })
+          }
+        }
+        setTimeout(poll, POLL_INTERVAL_MS)
+        return
+      }
+
+      // Immediate result (mock path)
+      setContents(prev => prev.map(c => 
+        c.id === contentId ? { ...c, transcript: result.content.transcript, isProcessed: true } : c
+      ))
+      toast({ title: 'Success!', description: `Transcript generated for "${title}"` })
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to generate transcript',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Failed to generate transcript', variant: 'destructive' })
     } finally {
-      setProcessingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(contentId)
-        return newSet
-      })
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(contentId); return s })
     }
   }
 
@@ -635,7 +712,7 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {contents.map((content, index) => (
-                  <Card key={content.id} className="card-hover border-brand-orange-200 bg-white/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                  <Card key={content.id} className="card-hover border-brand-orange-200 bg-green-600 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -712,7 +789,7 @@ export default function DashboardPage() {
                         </div>
                         
                         <div className="space-y-2">
-                          {/* Process Button */}
+                          {/* Process Button + status */}
                           {!content.isProcessed && (
                             <Button 
                               variant="outline" 
@@ -724,7 +801,7 @@ export default function DashboardPage() {
                               {processingIds.has(content.id) ? (
                                 <>
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-700 mr-2"></div>
-                                  Processing...
+                                  {processingJobs[content.id]?.status === 'processing' ? 'Processing...' : 'Queued...'}
                                 </>
                               ) : (
                                 <>
@@ -763,7 +840,18 @@ export default function DashboardPage() {
                           {/* Transcript Preview */}
                           {content.isProcessed && content.transcript && (
                             <div className="bg-gray-50 rounded-md p-3">
-                              <div className="flex items-center justify-between mb-2"><h4 className="text-sm font-medium text-gray-700">Transcript:</h4><Button variant="ghost" size="sm" onClick={() => handleDownloadTranscript(content)} className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900"><Download className="h-3 w-3 mr-1" />Download</Button></div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-medium text-gray-700">Transcript:</h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDownloadTranscript(content)}
+                                  className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900"
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Download
+                                </Button>
+                              </div>
                               <p 
                                 className="text-xs text-gray-600 line-clamp-3"
                                 style={getTextDirectionStyle(content.transcript || '')}
@@ -826,7 +914,6 @@ export default function DashboardPage() {
                             )}
                           </div>
                           
-                          {/* Edit/Delete Controls */}
                           {/* Publish/Unpublish Control */}
                           <div className="mb-2">
                             <Button 
@@ -855,12 +942,13 @@ export default function DashboardPage() {
                             </Button>
                           </div>
                           
+                          {/* Edit/Delete Controls */}
                           <div className="flex space-x-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
                               className="flex-1 border-brand-green-200 text-brand-green-700 hover:bg-brand-green-50"
-                              onClick={() => setEditingContent(content)}
+                              onClick={() => handleOpenDetailedView(content)}
                             >
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
@@ -992,14 +1080,24 @@ export default function DashboardPage() {
             </CardHeader>
             
             <CardContent className="p-6 space-y-6">
-              {/* Audio Player Section */}
-              <div className="bg-gradient-to-r from-brand-orange-50 to-brand-green-50 rounded-lg p-6 border border-brand-orange-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Mic className="h-5 w-5 mr-2 text-brand-orange-500" />
-                  Audio Player
-                </h3>
-                
-                <div className="space-y-4">
+              {/* Audio Player Section (compact) */}
+              <div className="rounded-md p-4 border border-gray-200 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center text-sm text-gray-700">
+                    <Mic className="h-4 w-4 mr-2 text-brand-orange-500" />
+                    Audio
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                      Language: {detailedContent.language === 'FARSI' ? 'Farsi' : 'English'}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                      Status: {detailedContent.isPublished ? 'Published' : 'Draft'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
                   <audio
                     ref={(audio) => {
                       if (audio) {
@@ -1011,11 +1109,6 @@ export default function DashboardPage() {
                     controls
                     className="w-full"
                   />
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Language: {detailedContent.language === 'FARSI' ? 'Farsi' : 'English'}</span>
-                    <span>Status: {detailedContent.isPublished ? 'Published' : 'Draft'}</span>
-                  </div>
                 </div>
               </div>
 
@@ -1028,53 +1121,53 @@ export default function DashboardPage() {
                   </h3>
                   
                   <div>
-                    <Label htmlFor="detail-title">Title</Label>
+                    <Label htmlFor="detail-title" className="text-xs text-gray-600">Title</Label>
                     <Input
                       id="detail-title"
                       defaultValue={detailedContent.title}
-                      className="mt-1"
+                      className="mt-1 text-sm"
                       style={getTextDirectionStyle(detailedContent.title)}
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="detail-description">Description</Label>
+                    <Label htmlFor="detail-description" className="text-xs text-gray-600">Description</Label>
                     <Textarea
                       id="detail-description"
                       defaultValue={detailedContent.description || ''}
                       rows={3}
-                      className="mt-1"
+                      className="mt-1 text-sm"
                       style={getTextDirectionStyle(detailedContent.description || '')}
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="detail-keywords">Keywords</Label>
+                      <Label htmlFor="detail-keywords" className="text-xs text-gray-600">Keywords</Label>
                       <Input
                         id="detail-keywords"
                         defaultValue={detailedContent.keywords || ''}
-                        className="mt-1"
+                        className="mt-1 text-sm"
                         placeholder="Comma separated"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="detail-subject">Subject</Label>
+                      <Label htmlFor="detail-subject" className="text-xs text-gray-600">Subject</Label>
                       <Input
                         id="detail-subject"
                         defaultValue={detailedContent.subject || ''}
-                        className="mt-1"
+                        className="mt-1 text-sm"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="detail-language">Language</Label>
+                    <Label htmlFor="detail-language" className="text-xs text-gray-600">Language</Label>
                     <select
                       id="detail-language"
                       defaultValue={detailedContent.language}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-orange-500 focus:ring-brand-orange-500"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-orange-500 focus:ring-brand-orange-500 text-sm"
                     >
                       <option value="ENGLISH">English</option>
                       <option value="FARSI">Farsi</option>
@@ -1084,7 +1177,7 @@ export default function DashboardPage() {
 
                 {/* Transcript Section */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <h3 className="text-base font-semibold text-gray-900 flex items-center">
                     <FileAudio className="h-5 w-5 mr-2 text-brand-orange-500" />
                     Transcript
                   </h3>
@@ -1122,7 +1215,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <Zap className="h-4 w-4 mr-2" />
-                          Generate Transcript
+                          {processingIds.has(detailedContent.id) ? (processingJobs[detailedContent.id]?.status === 'processing' ? 'Processing...' : 'Queued...') : 'Generate Transcript'}
                         </Button>
                       )}
                     </div>

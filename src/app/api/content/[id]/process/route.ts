@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/middleware'
 import { prisma } from '@/lib/db'
 import { logError, logInfo } from '@/lib/logger'
-import { addTranscriptJob } from '@/lib/transcriptQueue'
 import { join } from 'path'
+import { transcribeAudio, validateAudioFile } from '@/lib/transcriptService'
+import { addTranscriptJob } from '@/lib/transcriptQueue'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    logInfo(`Process transcript attempt: ${params.id}`, 'PROCESS')
+    logInfo(`Process transcript attempt (mock): ${params.id}`, 'PROCESS')
     const user = authMiddleware(request)
     
     if (user instanceof NextResponse) {
@@ -39,20 +40,48 @@ export async function POST(
       )
     }
 
-    // Get the audio file path
-    const audioUrl = content.audioUrl
-    const filename = audioUrl.replace('/api/uploads/', '')
-    const filepath = join(process.cwd(), 'public', 'uploads', filename)
+    // Mock transcript generation (no external API call)
+    // If OPENAI_API_KEY is available, enqueue a background Whisper job and return jobId for polling
+    if (process.env.OPENAI_API_KEY) {
+      const audioUrl = content.audioUrl
+      const filename = audioUrl.replace('/api/uploads/', '')
+      const filePath = join(process.cwd(), 'public', 'uploads', filename)
 
-    // Add transcript job to queue for OpenAI Whisper processing
-    const jobId = addTranscriptJob(content.id, filepath, content.language as 'ENGLISH' | 'FARSI')
-    
-    logInfo(`Transcript job queued: ${jobId} for content: ${content.id}`, 'PROCESS')
-    
+      const validation = await validateAudioFile(filePath)
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.error || 'Audio file validation failed' },
+          { status: 400 }
+        )
+      }
+
+      const jobId = addTranscriptJob(content.id, filePath, content.language as 'ENGLISH' | 'FARSI')
+      logInfo(`Whisper job queued: ${jobId} for content: ${content.id}`, 'PROCESS')
+      return NextResponse.json({
+        message: 'Transcript processing started',
+        jobId,
+        contentId: content.id
+      })
+    }
+
+    // Fallback: mock transcript generation (no external API)
+    const nowIso = new Date().toISOString()
+    const mockText = `Mock transcript for "${content.title}" generated at ${nowIso}.\nThis is placeholder transcript text. Replace with real STT later.`
+
+    const updated = await prisma.content.update({
+      where: { id: content.id },
+      data: {
+        transcript: mockText,
+        isProcessed: true,
+        editedTranscript: mockText,
+      }
+    })
+
+    logInfo(`Mock transcript generated and saved for content: ${content.id}`, 'PROCESS')
+
     return NextResponse.json({
-      message: 'Transcript processing started with OpenAI Whisper',
-      jobId: jobId,
-      contentId: content.id
+      message: 'Transcript generated (mock)',
+      content: updated
     })
   } catch (error) {
     logError(error, 'PROCESS')
@@ -63,4 +92,4 @@ export async function POST(
   }
 }
 
-// Mock transcript function removed - now using OpenAI Whisper
+// Using mock transcript generation for now; no external API

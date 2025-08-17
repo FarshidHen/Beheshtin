@@ -32,7 +32,7 @@ export interface TranscriptError {
  * @returns Promise with transcript result or error
  */
 export async function transcribeAudio(
-  filePath: string, 
+  filePath: string,
   expectedLanguage: 'ENGLISH' | 'FARSI' = 'ENGLISH'
 ): Promise<TranscriptResult | TranscriptError> {
   const startTime = Date.now()
@@ -40,32 +40,29 @@ export async function transcribeAudio(
   try {
     logInfo(`Starting transcription for: ${filePath}`, 'TRANSCRIPT')
     
-    // Prepare language parameter for Whisper
-    const languageCode = expectedLanguage === 'FARSI' ? 'fa' : 'en'
-    
     // Create file stream
     const audioFile = createReadStream(filePath)
     
     // Call OpenAI Whisper API
+    // Let Whisper auto-detect language by omitting explicit language parameter
     const response = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
-      language: languageCode,
       response_format: 'verbose_json', // Get additional metadata
       temperature: 0.2, // Lower temperature for more consistent results
     })
     
     const processingTime = Date.now() - startTime
     
-    // Detect actual language from response (if available)
+    // Detect actual language from response
     const detectedLanguage = detectLanguageFromText(response.text)
     
     logInfo(`Transcription completed in ${processingTime}ms`, 'TRANSCRIPT')
     
     return {
-      transcript: response.text,
+      transcript: response.text?.trim() || '',
       language: detectedLanguage,
-      confidence: response.segments?.[0]?.avg_logprob || undefined,
+      confidence: Array.isArray((response as any).segments) ? (response as any).segments[0]?.avg_logprob : undefined,
       processingTime
     }
     
@@ -91,8 +88,8 @@ export async function transcribeAudio(
  * @returns Detected language
  */
 function detectLanguageFromText(text: string): 'ENGLISH' | 'FARSI' {
-  // Check for Persian/Farsi characters
-  const persianRegex = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/
+  // Check for Persian/Farsi characters and common Persian punctuation/diacritics
+  const persianRegex = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\u061B\u061F\u064B-\u065F]/
   
   if (persianRegex.test(text)) {
     return 'FARSI'
@@ -179,3 +176,6 @@ export async function validateAudioFile(filePath: string): Promise<{
     }
   }
 }
+
+
+

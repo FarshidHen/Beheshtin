@@ -3,6 +3,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Use Node-API engine for better compatibility on Windows ARM
+  engineType = "library"
+  binaryTargets = ["windows", "native"]
 }
 
 datasource db {

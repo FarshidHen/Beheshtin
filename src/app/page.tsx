@@ -41,7 +41,7 @@ export default function HomePage() {
     fetchPublicContent()
   }, [])
 
-  // Cleanup audio when component unmounts
+  // Cleanup audio when component unmounts or tab is hidden
   useEffect(() => {
     const stopAudio = () => {
       const audio = currentAudioRef.current
@@ -181,6 +181,7 @@ export default function HomePage() {
 
   const handleDownloadTranscript = async (content: Content) => {
     try {
+      // Import PDF generation utility
       const { generateTranscriptPDF } = await import('@/lib/pdfGenerator')
       
       await generateTranscriptPDF({
@@ -188,7 +189,7 @@ export default function HomePage() {
         transcript: content.transcript,
         author: content.user.name,
         createdAt: content.createdAt,
-        language: 'FARSI'
+        language: 'FARSI' // Default to Farsi for now
       })
       
       toast({
