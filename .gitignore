@@ -46,3 +46,8 @@ public/uploads/
 public/uploads/
 .next*
 logs/*.log
+
+# runtime
+public/uploads/
+logs/
+certbot/
