@@ -712,7 +712,7 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {contents.map((content, index) => (
-                  <Card key={content.id} className="card-hover border-brand-orange-200 bg-green-600 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                  <Card key={content.id} className="card-hover border-brand-orange-200 bg-white/90 backdrop-blur-sm shadow-sm animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -813,7 +813,7 @@ export default function DashboardPage() {
                           )}
                           
                           {/* Features Info Cards */}
-                          <div className="grid grid-cols-3 gap-2 mb-3">
+                          <div className="hidden">
                             <div className="bg-brand-orange-50 rounded-md p-2 text-center border border-brand-orange-200">
                               <div className="w-5 h-5 bg-brand-orange-500 rounded-full flex items-center justify-center mx-auto mb-1">
                                 <Mic className="h-3 w-3 text-white" />
